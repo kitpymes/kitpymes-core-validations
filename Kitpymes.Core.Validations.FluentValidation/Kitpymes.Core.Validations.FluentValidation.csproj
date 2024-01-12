@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
+  <Import Project="$(SolutionDir)docs/props/Pack.Build.props" Condition="Exists('$(SolutionDir)docs/props/Pack.Build.props')" />
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.2.2" />
+  </ItemGroup>
+
+  <!-- REEMPLAZAR POR NUGET -->
+  <ItemGroup>
+    <Reference Include="Kitpymes.Core.Shared">
+      <HintPath>..\..\kitpymes-core-shared\Kitpymes.Core.Shared\bin\Debug\net8.0\Kitpymes.Core.Shared.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

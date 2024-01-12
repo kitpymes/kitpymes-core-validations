@@ -1,0 +1,137 @@
+<!-- Referencia: https://docs.microsoft.com/es-es/visualstudio/msbuild/common-msbuild-project-properties?view=vs-2019  -->
+
+<Project>
+  <PropertyGroup>
+    <IsTestsProject>$(MSBuildProjectName.Contains('Tests'))</IsTestsProject>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <!--
+      Si no agregamos <LangVersion>, por defecto:
+        .NET	8.x	 utiliza => C# 12
+        .NET	7.x	 utiliza => C# 11
+      
+      Opciones:
+        preview: El compilador acepta toda la sintaxis de lenguaje válida de la última versión preliminar.
+        latest: El compilador acepta la sintaxis de la última versión publicada del compilador (incluida la versión menor).
+        latestMajor o default: El compilador acepta la sintaxis de la última versión principal publicada del compilador.
+        12.0: El compilador solo acepta la sintaxis incluida en C# 12 o inferior.
+        11.0: El compilador solo acepta la sintaxis incluida en C# 11 o inferior.
+    -->
+    <LangVersion>latest</LangVersion>
+    <NeutralLanguage>es-ES</NeutralLanguage>
+  </PropertyGroup>
+
+  <!-- Muestra en la consola de errores, las advertencias como error en la compilación -->
+  <Choose>
+    <When Condition=" '$(Configuration)|$(Platform)' == 'Debug|Release|AnyCPU' ">
+      <PropertyGroup>
+        <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ConfigurationErrorMsg>Falta configurar la variable [$(Configuration)] o [$(Platform)] en su solución.</ConfigurationErrorMsg>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <!-- Optimize 
+    
+    - DebugSymbols (bool): Habilita/desabilita la creación de archivos de símbolos pbd. 
+    
+    - DebugType (full | pdbonly | portable | embedded | none): Define el nivel de información de depuración que desea generar. 
+    
+    - Optimize (bool): Permite la optimización del compilador. 
+    
+    - DefineConstants: Permite definir constantes condicionales para el compilador. Ej:
+      
+      <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^net\d'))">
+        <DefineConstants>NETFRAMEWORK</DefineConstants>
+      </PropertyGroup>
+      <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^netstandard\d'))">
+        <DefineConstants>NETSTANDARD</DefineConstants>
+      </PropertyGroup>
+      <PropertyGroup Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(TargetFramework)', '^netcoreapp\d'))">
+        <DefineConstants>NETCORE</DefineConstants>
+      </PropertyGroup>
+      
+      #if NETFRAMEWORK
+          FrameworkSpecific();
+      #endif
+
+      #if NETSTANDARD
+          StandardSpecific();
+      #endif
+
+      #if NETCORE
+          CoreSpecific();
+      #endif
+    
+    -->
+  <Choose>
+    <When Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+      <PropertyGroup>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+      <PropertyGroup>
+        <DebugSymbols>false</DebugSymbols>
+        <DebugType>none</DebugType>
+        <Optimize>true</Optimize>
+        <DefineConstants>TRACE</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ConfigurationErrorMsg>Falta configurar la variable [$(Configuration)] o [$(Platform)] en su solución.</ConfigurationErrorMsg>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <!-- Analyzers -->
+  <Choose>
+    <When Condition=" '$(IsTestsProject)' == 'false' ">
+      <PropertyGroup>
+        <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+        <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+        <CodeAnalysisRuleSet>$(SolutionDir)docs\analyzers\stylecop.ruleset</CodeAnalysisRuleSet>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <PackageReference Update="Microsoft.VisualStudio.Threading.Analyzers" Version="17.4.27" PrivateAssets="All" />
+        <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" IncludeAssets="Analyzers;Build" PrivateAssets="All" />
+        <AdditionalFiles Include="$(SolutionDir)docs\analyzers\stylecop.json" Visible="false" />
+      </ItemGroup>
+    </When>
+    <!--
+    <Otherwise>
+      <PropertyGroup>
+        <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+      </PropertyGroup>
+    </Otherwise>
+     -->
+  </Choose>
+
+  <!-- Documentation -->
+  <PropertyGroup Condition=" '$(IsTestsProject)' == 'false' ">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- SignAssembly -->
+  <PropertyGroup Condition=" '$(IsTestsProject)' == 'false' ">
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)docs\signassembly\SignStrong.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <!-- MSTest -->
+  <PropertyGroup>
+    <RunSettingsFilePath>$(SolutionDir)docs\props\tests.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+
+</Project>

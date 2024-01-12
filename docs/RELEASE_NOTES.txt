@@ -1,0 +1,26 @@
+# v.1.0.8
+- Se agrega un nuevo lanzador de excepciones de tipo "ApplicationException".
+
+# v.1.0.7
+- Se actualizan validaciones.
+
+# v.1.0.6
+- Se migra de la versión netcoreapp3 a net5 y se actualizan librerías.
+
+# v.1.0.5
+- Se actualizan validaciones. Se actualizan librerías.
+
+# v.1.0.4
+- Se actualizan validaciones. Se actualizan librerías.
+
+# v.1.0.3
+- Se actualizan validaciones. Se agregan recursos en español.
+
+# v.1.0.2
+- Se actualizan validaciones. Se actualizan librerías.
+
+# v.1.0.1
+- Se agrega la referencia a la librería Kitpymes.Core.Shared 1.0.4.
+
+# v.1.0.0
+- Se genera la primera versión del paquete del proyecto de validaciones.

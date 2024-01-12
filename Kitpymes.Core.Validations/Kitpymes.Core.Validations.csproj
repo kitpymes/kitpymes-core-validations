@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  
+  <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
+  <Import Project="$(SolutionDir)docs/props/Pack.Build.props" Condition="Exists('$(SolutionDir)docs/props/Pack.Build.props')" />
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- REEMPLAZAR POR NUGET -->
+  <ItemGroup>
+    <Reference Include="Kitpymes.Core.Shared">
+      <HintPath>..\..\kitpymes-core-shared\Kitpymes.Core.Shared\bin\Debug\net8.0\Kitpymes.Core.Shared.dll</HintPath>
+    </Reference>
+
+    <Reference Include="Kitpymes.Core.Results">
+      <HintPath>..\..\kitpymes-core-results\Kitpymes.Core.Results\bin\Debug\net8.0\Kitpymes.Core.Results.dll</HintPath>
+    </Reference>
+    
+    <Reference Include="Kitpymes.Core.Logger">
+      <HintPath>..\..\kitpymes-core-logger\Kitpymes.Core.Logger\bin\Debug\net8.0\Kitpymes.Core.Logger.dll</HintPath>
+    </Reference>
+
+    <Reference Include="Kitpymes.Core.Logger.Abstractions">
+      <HintPath>..\..\kitpymes-core-logger\Kitpymes.Core.Logger.Abstractions\bin\Debug\net8.0\Kitpymes.Core.Logger.Abstractions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
+    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
+  </ItemGroup>
+
+</Project>
