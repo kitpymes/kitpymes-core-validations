@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using Kitpymes.Core.Validations.FluentValidation;
+using Kitpymes.Core.Validations.FluentValidation.Extensions;
 
 namespace Tests.Api.Models
 {

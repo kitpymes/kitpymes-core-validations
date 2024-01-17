@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace Kitpymes.Core.Validations.Tests
+namespace Kitpymes.Core.Validations.Tests.Fakes
 {
     public static class FakeTypes
     {
@@ -41,7 +41,7 @@ namespace Kitpymes.Core.Validations.Tests
                 public static long Long_Default { get; } = default;
                 public static long Long_Min { get; } = long.MinValue;
                 public static long Long_Max { get; } = long.MaxValue;
-                public static long Long_New(int max = 3) => (long)new Random().Next(max);
+                public static long Long_New(int max = 3) => new Random().Next(max);
 
                 #endregion Entero con signo
 
@@ -189,20 +189,20 @@ namespace Kitpymes.Core.Validations.Tests
                 public static object Object_New_AnonymousType()
                 => new
                 {
-                   ConfirmPassword = String_New(),
-                   Email = String_New(),
-                   Hostname = String_New(),
-                   Id = ValueTypes.StructureTypes.Guid_New(),
-                   Name = String_New(),
-                   Password = String_New(),
-                   Point = ValueTypes.SimpleTypes.Int_New(),
-                   Roles = new List<string>() // cambiar
+                    ConfirmPassword = String_New(),
+                    Email = String_New(),
+                    Hostname = String_New(),
+                    Id = ValueTypes.StructureTypes.Guid_New(),
+                    Name = String_New(),
+                    Password = String_New(),
+                    Point = ValueTypes.SimpleTypes.Int_New(),
+                    Roles = new List<string>() // cambiar
                 };
             }
 
             public class InterfaceTypes
             {
-                public interface ExampleInterface 
+                public interface ExampleInterface
                 {
                     public Guid Id { get; set; }
                     public string? Name { get; set; }
@@ -232,7 +232,7 @@ namespace Kitpymes.Core.Validations.Tests
             }
         }
 
-        public class ColecctionsTypes 
+        public class ColecctionsTypes
         {
             public static IEnumerable<string>? Enumerable_Null { get; } = null;
             public static IEnumerable<string>? Enumerable_Default { get; } = default; // null

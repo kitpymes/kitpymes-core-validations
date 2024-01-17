@@ -9,7 +9,7 @@ namespace Kitpymes.Core.Validations.Extensions;
 
 using System;
 using Kitpymes.Core.Shared.Extensions;
-using Kitpymes.Core.Validations.FluentValidation;
+using Kitpymes.Core.Validations.FluentValidation.Extensions;
 using Kitpymes.Core.Validations.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

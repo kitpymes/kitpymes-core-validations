@@ -19,8 +19,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using AppResult = Results;
-using Kitpymes.Core.Validations.Abstractions;
 using Kitpymes.Core.Shared;
+using Kitpymes.Core.Validations.Abstractions.Exceptions;
 
 /*
     Clase del middlware ValidationsMiddleware

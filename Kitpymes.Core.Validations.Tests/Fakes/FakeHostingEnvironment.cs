@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Moq;
 
-namespace Kitpymes.Core.Validations.Tests
+namespace Kitpymes.Core.Validations.Tests.Fakes
 {
     public class FakeHostingEnvironment
     {

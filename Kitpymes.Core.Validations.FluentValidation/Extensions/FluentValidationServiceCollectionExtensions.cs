@@ -5,13 +5,14 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Kitpymes.Core.Validations.FluentValidation;
+namespace Kitpymes.Core.Validations.FluentValidation.Extensions;
 
 using System.Linq;
 using global::FluentValidation;
 using global::FluentValidation.AspNetCore;
 using Kitpymes.Core.Shared.Extensions;
-using Kitpymes.Core.Validations.Abstractions;
+using Kitpymes.Core.Validations.Abstractions.Exceptions;
+using Kitpymes.Core.Validations.FluentValidation.Settings;
 using Microsoft.Extensions.DependencyInjection;
 
 /*
@@ -38,7 +39,7 @@ public static class FluentValidationServiceCollectionExtensions
     {
         if (settings?.Enabled == true && settings.Assemblies?.Count > 0)
         {
-            services.LoadFluentValidation([..settings.Assemblies]);
+            services.LoadFluentValidation([.. settings.Assemblies]);
         }
 
         return services;

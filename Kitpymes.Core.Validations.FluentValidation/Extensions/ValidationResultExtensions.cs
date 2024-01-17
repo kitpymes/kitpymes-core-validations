@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Kitpymes.Core.Validations.FluentValidation;
+namespace Kitpymes.Core.Validations.FluentValidation.Extensions;
 
 using global::FluentValidation.Results;
 using System;

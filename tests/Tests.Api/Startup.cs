@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Tests.Api
 {
-    public class Startup(IConfiguration configuration)
+    public class Startup()
     {
         public void ConfigureServices(IServiceCollection services)
         {
@@ -19,7 +19,7 @@ namespace Tests.Api
             //services.LoadValidations(validator => validator.WithEnabled().WithFluentValidation("Tests.Api.Models"));
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app)
         {
             /*** Agregamos el middlware para las validaciones. ***/
             app.LoadValidations();

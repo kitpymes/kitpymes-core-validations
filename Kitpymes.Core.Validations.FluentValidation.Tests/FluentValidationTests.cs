@@ -1,4 +1,7 @@
 using Kitpymes.Core.Shared.Util;
+using Kitpymes.Core.Validations.Abstractions;
+using Kitpymes.Core.Validations.FluentValidation.Extensions;
+using Kitpymes.Core.Validations.FluentValidation.Tests.Fakes;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Kitpymes.Core.Validations.FluentValidation.Tests;
@@ -209,9 +212,9 @@ public class FluentValidationTests
 
         var validator = new FakeObjectValidator();
 
-        validator.RuleFor(_ => _.Name).IsRegex(Regexp.ForName).IsRegex(Regexp.ForName, nameof(FakeObject.Name) + FakeObject.FIELD_NAME);
-        validator.RuleFor(_ => _.Email).IsRegex(Regexp.ForEmail).IsRegex(Regexp.ForEmail, nameof(FakeObject.Email) + FakeObject.FIELD_NAME);
-        validator.RuleFor(_ => _.Subdomain).IsRegex(Regexp.ForSubdomain).IsRegex(Regexp.ForSubdomain, nameof(FakeObject.Subdomain) + FakeObject.FIELD_NAME);
+        validator.RuleFor(_ => _.Name).IsRegexNotMatch(Regexp.ForName).IsRegexNotMatch(Regexp.ForName, nameof(FakeObject.Name) + FakeObject.FIELD_NAME);
+        validator.RuleFor(_ => _.Email).IsRegexNotMatch(Regexp.ForEmail).IsRegexNotMatch(Regexp.ForEmail, nameof(FakeObject.Email) + FakeObject.FIELD_NAME);
+        validator.RuleFor(_ => _.Subdomain).IsRegexNotMatch(Regexp.ForSubdomain).IsRegexNotMatch(Regexp.ForSubdomain, nameof(FakeObject.Subdomain) + FakeObject.FIELD_NAME);
 
         // Validate
         var result = validator.Validate(mock);

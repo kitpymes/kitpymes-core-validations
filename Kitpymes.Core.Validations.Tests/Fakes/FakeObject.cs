@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Kitpymes.Core.Validations.Tests
+namespace Kitpymes.Core.Validations.Tests.Fakes
 {
     public class FakeObject
     {
@@ -13,5 +13,5 @@ namespace Kitpymes.Core.Validations.Tests
         public string? Hostname { get; set; }
         public int? Point { get; set; }
         public List<string>? Roles { get; set; }
-	}
+    }
 }

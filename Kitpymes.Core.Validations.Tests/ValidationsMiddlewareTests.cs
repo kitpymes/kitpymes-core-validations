@@ -10,6 +10,8 @@ using System.Net.Mime;
 using System.Threading.Tasks;
 using Kitpymes.Core.Shared;
 using Kitpymes.Core.Validations.Middleware;
+using Kitpymes.Core.Validations.Tests.Fakes;
+using Kitpymes.Core.Validations.Abstractions.Exceptions;
 
 namespace Kitpymes.Core.Validations.Tests;
 

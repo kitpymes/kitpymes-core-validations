@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Kitpymes.Core.Validations.FluentValidation
+namespace Kitpymes.Core.Validations.FluentValidation.Settings
 {
     using System.Collections.Generic;
 

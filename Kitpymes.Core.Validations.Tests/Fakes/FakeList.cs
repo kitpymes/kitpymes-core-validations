@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Kitpymes.Core.Validations.Tests
+namespace Kitpymes.Core.Validations.Tests.Fakes
 {
     public static class FakeList
     {
@@ -9,7 +9,7 @@ namespace Kitpymes.Core.Validations.Tests
 
         public static List<string> NotNullCountZero => new List<string>();
 
-        public static List<string> NotNull(int count = 3) 
+        public static List<string> NotNull(int count = 3)
         {
             var list = new List<string>(count);
 
@@ -20,5 +20,5 @@ namespace Kitpymes.Core.Validations.Tests
 
             return list;
         }
-     }
+    }
 }

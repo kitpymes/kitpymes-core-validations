@@ -13,7 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
-using Kitpymes.Core.Validations.Abstractions;
+using Kitpymes.Core.Validations.Abstractions.Exceptions;
 
 /*
     Configuración de las reglas de validación ValidatorRule

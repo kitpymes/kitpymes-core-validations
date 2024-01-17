@@ -5,7 +5,7 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Kitpymes.Core.Validations.Abstractions
+namespace Kitpymes.Core.Validations.Abstractions.Exceptions
 {
     using System;
     using System.Collections.Generic;

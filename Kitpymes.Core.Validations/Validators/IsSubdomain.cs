@@ -8,7 +8,7 @@
 namespace Kitpymes.Core.Validations;
 
 using Kitpymes.Core.Shared.Extensions;
-using System.Text.RegularExpressions;
+using Kitpymes.Core.Shared.Util;
 
 /*
     Configuración de los validadores ValidatorRuleOptions

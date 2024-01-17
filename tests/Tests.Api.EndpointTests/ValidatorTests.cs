@@ -1,7 +1,6 @@
 using Tests.Api.Models;
 using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Validations;
-using Kitpymes.Core.Validations.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -18,6 +17,7 @@ using System.Text.Json.Serialization;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Kitpymes.Core.Validations.Extensions;
+using Kitpymes.Core.Validations.Abstractions.Exceptions;
 
 namespace Tests.Api.EndpointsTests
 {

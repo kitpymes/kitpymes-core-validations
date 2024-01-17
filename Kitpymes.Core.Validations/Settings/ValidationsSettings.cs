@@ -5,9 +5,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Kitpymes.Core.Validations;
+namespace Kitpymes.Core.Validations.Settings;
 
-using Kitpymes.Core.Validations.FluentValidation;
+using Kitpymes.Core.Validations.FluentValidation.Settings;
 
 /*
     Configuración de las validaciones ValidationsSettings
