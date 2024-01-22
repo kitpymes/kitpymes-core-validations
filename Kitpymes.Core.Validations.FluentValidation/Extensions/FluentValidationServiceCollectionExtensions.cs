@@ -58,7 +58,7 @@ public static class FluentValidationServiceCollectionExtensions
             .AddValidatorsFromAssemblies(assemblies.ToAssembly())
             .AddFluentValidationClientsideAdapters();
 
-        var mvcBuilder = services.BuildServiceProvider().GetService<IMvcBuilder>() ?? services.AddMvc();
+        var mvcBuilder = services.ToService<IMvcBuilder>() ?? services.AddMvc();
 
         mvcBuilder
             .ConfigureApiBehaviorOptions(x =>
