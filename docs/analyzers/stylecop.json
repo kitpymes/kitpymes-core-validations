@@ -14,11 +14,11 @@
             }
         },
         "indentation": {
-            // El número de columnas a usar para cada sangría de código. Dependiendo de las configuraciones useTabs y tabSize, esto se rellenará con tabs y / o espacios.
+            // El nÃºmero de columnas a usar para cada sangrÃ­a de cÃ³digo. Dependiendo de las configuraciones useTabs y tabSize, esto se rellenarÃ¡ con tabs y / o espacios.
             "indentationSize": 4,
-            // El ancho de un carácter de tabulación duro en el código fuente. Este valor se utiliza al convertir entre tabs y espacios.
+            // El ancho de un carÃ¡cter de tabulaciÃ³n duro en el cÃ³digo fuente. Este valor se utiliza al convertir entre tabs y espacios.
             "tabSize": 4,
-            // true: para usar tabs fijos, false: para usar sangría de espacios 
+            // true: para usar tabs fijos, false: para usar sangrÃ­a de espacios 
             "useTabs": false
         }   
     }

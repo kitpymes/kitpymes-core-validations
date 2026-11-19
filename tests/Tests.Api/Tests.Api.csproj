@@ -12,11 +12,8 @@
     <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
   </ItemGroup>
 
-  <!-- TODO: REEMPLAZAR POR NUGET -->
   <ItemGroup>
-    <Reference Include="Kitpymes.Core.Shared">
-      <HintPath>..\..\..\kitpymes-core-shared\Kitpymes.Core.Shared\bin\Debug\net8.0\Kitpymes.Core.Shared.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

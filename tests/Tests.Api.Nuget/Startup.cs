@@ -1,4 +1,4 @@
-using Kitpymes.Core.Validations;
+ï»¿using Kitpymes.Core.Validations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -18,10 +18,10 @@ namespace Tests.Api.Nuget
 
         public void ConfigureServices(IServiceCollection services)
         {
-            /*** Configuración desde el Appsetings para FluentValidator. ***/
+            /*** ConfiguraciÃ³n desde el Appsetings para FluentValidator. ***/
             //services.LoadValidations(Configuration);
 
-            /*** Configuración manual para FluentValidator. ***/
+            /*** ConfiguraciÃ³n manual para FluentValidator. ***/
             services.LoadValidations(validator => validator.UseFluentValidator("Tests.Api.Models"));
         }
 

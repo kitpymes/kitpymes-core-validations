@@ -3,7 +3,7 @@
 <Project>
   <PropertyGroup>
     <IsTestsProject>$(MSBuildProjectName.Contains('Tests'))</IsTestsProject>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <!--
       Si no agregamos <LangVersion>, por defecto:
@@ -80,8 +80,9 @@
     </When>
     <When Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
       <PropertyGroup>
-        <DebugSymbols>false</DebugSymbols>
-        <DebugType>none</DebugType>
+        <!-- Símbolos portables en Release: sin PDB, el paquete de símbolos sale vacío y Source Link no sirve. -->
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>portable</DebugType>
         <Optimize>true</Optimize>
         <DefineConstants>TRACE</DefineConstants>
       </PropertyGroup>

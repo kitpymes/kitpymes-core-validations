@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+Ôªø// -----------------------------------------------------------------------
 // <copyright file="InsideRangeRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensiÛn InsideRangeRuleBuilderExtensions
+    Clase de extensi√≥n InsideRangeRuleBuilderExtensions
     Contiene las extensiones de las validaciones InsideRange
 */
 
 /// <summary>
-/// Clase de extensiÛn <c>InsideRangeRuleBuilderExtensions</c>.
+/// Clase de extensi√≥n <c>InsideRangeRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones InsideRange.
 /// </summary>
 /// <remarks>
@@ -30,9 +30,9 @@ public static class InsideRangeRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="min">Valor mÌnimo que puede tener el campo.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="min">Valor m√≠nimo que puede tener el campo.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsInsideRange<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, long max, string? fieldName = null)
@@ -49,9 +49,9 @@ public static class InsideRangeRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="min">Valor mÌnimo que puede tener el campo.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="min">Valor m√≠nimo que puede tener el campo.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsInsideRangeWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, long max, string message)
@@ -68,9 +68,9 @@ public static class InsideRangeRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="min">Valor mÌnimo que puede tener el campo.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="min">Valor m√≠nimo que puede tener el campo.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsInsideOrEqualRange<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, long max, string? fieldName = null)
@@ -87,9 +87,9 @@ public static class InsideRangeRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="min">Valor mÌnimo que puede tener el campo.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="min">Valor m√≠nimo que puede tener el campo.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsInsideOrEqualRangeWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, long max, string message)

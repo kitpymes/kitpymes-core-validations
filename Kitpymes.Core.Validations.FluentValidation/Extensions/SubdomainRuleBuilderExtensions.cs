@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+ï»¿// -----------------------------------------------------------------------
 // <copyright file="SubdomainRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensión SubdomainRuleBuilderExtensions
+    Clase de extensiÃ³n SubdomainRuleBuilderExtensions
     Contiene las extensiones de las validaciones Subdomain
 */
 
 /// <summary>
-/// Clase de extensión <c>SubdomainRuleBuilderExtensions</c>.
+/// Clase de extensiÃ³n <c>SubdomainRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones Subdomain.
 /// </summary>
 /// <remarks>
@@ -29,7 +29,7 @@ public static class SubdomainRuleBuilderExtensions
     /// Comprueba si el valor ingresado es valido.
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, string?> IsSubdomain<T>(this IRuleBuilder<T, string?> ruleBuilder, string? fieldName = null)
@@ -45,7 +45,7 @@ public static class SubdomainRuleBuilderExtensions
     /// Comprueba si el valor ingresado es valido.
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, string?> IsSubdomainWithMessage<T>(this IRuleBuilder<T, string?> ruleBuilder, string message)

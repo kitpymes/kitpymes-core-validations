@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+Ôªø// -----------------------------------------------------------------------
 // <copyright file="GreaterRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensiÛn GreaterRuleBuilderExtensions
+    Clase de extensi√≥n GreaterRuleBuilderExtensions
     Contiene las extensiones de las validaciones Greater
 */
 
 /// <summary>
-/// Clase de extensiÛn <c>GreaterRuleBuilderExtensions</c>.
+/// Clase de extensi√≥n <c>GreaterRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones Greater.
 /// </summary>
 /// <remarks>
@@ -30,8 +30,8 @@ public static class GreaterRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsGreater<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long max, string? fieldName = null)
@@ -48,8 +48,8 @@ public static class GreaterRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsGreaterWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long max, string message)
@@ -66,8 +66,8 @@ public static class GreaterRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsGreaterOrEqual<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long max, string? fieldName = null)
@@ -84,8 +84,8 @@ public static class GreaterRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validaciÛn.</param>
-    /// <param name="max">Valor m·ximo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaci√≥n.</param>
+    /// <param name="max">Valor m√°ximo que puede tener el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsGreaterOrEqualWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long max, string message)

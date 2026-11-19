@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+ï»¿// -----------------------------------------------------------------------
 // <copyright file="NotEqualRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensión NotEqualRuleBuilderExtensions
+    Clase de extensiÃ³n NotEqualRuleBuilderExtensions
     Contiene las extensiones de las validaciones NotEqual
 */
 
 /// <summary>
-/// Clase de extensión <c>NotEqualRuleBuilderExtensions</c>.
+/// Clase de extensiÃ³n <c>NotEqualRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones NotEqual.
 /// </summary>
 /// <remarks>
@@ -30,7 +30,7 @@ public static class NotEqualRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="valueCompare">Valor a comparar.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <param name="fieldNameCompare">Nombre del campo a comparar.</param>
@@ -49,7 +49,7 @@ public static class NotEqualRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="valueCompare">Valor a comparar.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>

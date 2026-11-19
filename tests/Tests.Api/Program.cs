@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+ï»¿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Kitpymes.Core.Validations.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -12,10 +12,10 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-/*** Configuración desde el AppSettings para FluentValidator. ***/
+/*** ConfiguraciÃ³n desde el AppSettings para FluentValidator. ***/
 builder.Services.LoadValidations();
 
-/*** Configuración manual para FluentValidator. ***/
+/*** ConfiguraciÃ³n manual para FluentValidator. ***/
 //builder.Services.LoadValidations(options => options.WithEnabled().WithFluentValidation("Tests.Api.Models"));
 
 var application = builder.Build();
