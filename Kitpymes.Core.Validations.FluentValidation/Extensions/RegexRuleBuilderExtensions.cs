@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+ï»¿// -----------------------------------------------------------------------
 // <copyright file="RegexRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensión RegexRuleBuilderExtensions
+    Clase de extensiÃ³n RegexRuleBuilderExtensions
     Contiene las extensiones de las validaciones Regex
 */
 
 /// <summary>
-/// Clase de extensión <c>RegexRuleBuilderExtensions</c>.
+/// Clase de extensiÃ³n <c>RegexRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones Regex.
 /// </summary>
 /// <remarks>
@@ -29,8 +29,8 @@ public static class RegexRuleBuilderExtensions
     /// Comprueba si el valor ingresado es valido.
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
-    /// <param name="regex">Expresión regular que tiene que cumplir el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
+    /// <param name="regex">ExpresiÃ³n regular que tiene que cumplir el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, string?> IsRegexNotMatch<T>(this IRuleBuilder<T, string?> ruleBuilder, string regex, string? fieldName = null)
@@ -46,8 +46,8 @@ public static class RegexRuleBuilderExtensions
     /// Comprueba si el valor ingresado es valido.
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
-    /// <param name="regex">Expresión regular que tiene que cumplir el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
+    /// <param name="regex">ExpresiÃ³n regular que tiene que cumplir el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, string?> IsRegexNotMatchWithMessage<T>(this IRuleBuilder<T, string?> ruleBuilder, string regex, string message)

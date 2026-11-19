@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+ï»¿// -----------------------------------------------------------------------
 // <copyright file="NullOrAnyRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -13,12 +13,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensión NullOrAnyRuleBuilderExtensions
+    Clase de extensiÃ³n NullOrAnyRuleBuilderExtensions
     Contiene las extensiones de las validaciones NullOrAny
 */
 
 /// <summary>
-/// Clase de extensión <c>NullOrAnyRuleBuilderExtensions</c>.
+/// Clase de extensiÃ³n <c>NullOrAnyRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones NullOrAny.
 /// </summary>
 /// <remarks>
@@ -31,7 +31,7 @@ public static class NullOrAnyRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsNullOrAny<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, string? fieldName = null)
@@ -49,7 +49,7 @@ public static class NullOrAnyRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsNullOrAnyWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, string message)

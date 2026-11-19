@@ -3,7 +3,7 @@
   <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
 
   <ItemGroup>
-    <PackageReference Include="Kitpymes.Core.Shared" Version="1.1.0" />
+    <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

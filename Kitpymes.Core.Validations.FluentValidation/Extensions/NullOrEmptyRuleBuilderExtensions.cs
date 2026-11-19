@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+ï»¿// -----------------------------------------------------------------------
 // <copyright file="NullOrEmptyRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensión NullOrEmptyRuleBuilderExtensions
+    Clase de extensiÃ³n NullOrEmptyRuleBuilderExtensions
     Contiene las extensiones de las validaciones NullOrEmpty
 */
 
 /// <summary>
-/// Clase de extensión <c>NullOrEmptyRuleBuilderExtensions</c>.
+/// Clase de extensiÃ³n <c>NullOrEmptyRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones NullOrEmpty.
 /// </summary>
 /// <remarks>
@@ -30,7 +30,7 @@ public static class NullOrEmptyRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsNullOrEmpty<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, string? fieldName = null)
@@ -47,7 +47,7 @@ public static class NullOrEmptyRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsNullOrEmptyWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, string message)

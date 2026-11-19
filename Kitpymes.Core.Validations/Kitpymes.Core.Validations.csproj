@@ -7,23 +7,14 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <!-- REEMPLAZAR POR NUGET -->
   <ItemGroup>
-    <Reference Include="Kitpymes.Core.Shared">
-      <HintPath>..\..\kitpymes-core-shared\Kitpymes.Core.Shared\bin\Debug\net8.0\Kitpymes.Core.Shared.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
 
-    <Reference Include="Kitpymes.Core.Results">
-      <HintPath>..\..\kitpymes-core-results\Kitpymes.Core.Results\bin\Debug\net8.0\Kitpymes.Core.Results.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Results" Version="1.0.0" />
     
-    <Reference Include="Kitpymes.Core.Logger">
-      <HintPath>..\..\kitpymes-core-logger\Kitpymes.Core.Logger\bin\Debug\net8.0\Kitpymes.Core.Logger.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Logger" Version="2.0.0" />
 
-    <Reference Include="Kitpymes.Core.Logger.Abstractions">
-      <HintPath>..\..\kitpymes-core-logger\Kitpymes.Core.Logger.Abstractions\bin\Debug\net8.0\Kitpymes.Core.Logger.Abstractions.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Kitpymes.Core.Logger.Abstractions" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>

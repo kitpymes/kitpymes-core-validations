@@ -17,17 +17,18 @@
         <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
         <PackageLicenseType>file</PackageLicenseType>
         <PackageIcon>logo.png</PackageIcon>
-        <PackageProjectUrl>https://kitpymes.github.io/template-netcore-validations/</PackageProjectUrl>
-        <PackageReleaseNotes>https://github.com/kitpymes/template-netcore-validations/tree/master/docs/RELEASE_NOTES.txt</PackageReleaseNotes>
-        <RepositoryUrl>https://github.com/kitpymes/template-netcore-validations</RepositoryUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/kitpymes/kitpymes-core-validations</PackageProjectUrl>
+        <PackageReleaseNotes>https://github.com/kitpymes/kitpymes-core-validations/blob/master/docs/RELEASE_NOTES.txt</PackageReleaseNotes>
+        <RepositoryUrl>https://github.com/kitpymes/kitpymes-core-validations</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>Validations, Validaciones, Validador, FluentValidation</PackageTags>
-        <PackageOutputPath>$(SolutionDir)docs\packages\$(Version)</PackageOutputPath>
       </PropertyGroup>
     
       <ItemGroup>
         <None Include="$(SolutionDir)docs\LICENSE.txt" Pack="true" PackagePath="." />
         <None Include="$(SolutionDir)docs\images\logo.png" Pack="true" PackagePath="." />
+        <None Include="$(SolutionDir)docs\README_NUGET.md" Pack="true" PackagePath="README.md" />
       </ItemGroup>
   
     </When>
@@ -51,11 +52,7 @@
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
       </PropertyGroup>
-
-      <ItemGroup>
-        <!-- Required if your repository is on Github -->
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-      </ItemGroup>
+      <!-- Source Link viene incluido en el SDK desde .NET 8: ya no hace falta el paquete Microsoft.SourceLink.GitHub. -->
     </When>
   </Choose>
 

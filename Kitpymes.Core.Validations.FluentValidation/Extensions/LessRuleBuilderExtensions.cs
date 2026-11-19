@@ -1,4 +1,4 @@
-// -----------------------------------------------------------------------
+ï»¿// -----------------------------------------------------------------------
 // <copyright file="LessRuleBuilderExtensions.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -12,12 +12,12 @@ using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
 
 /*
-    Clase de extensión LessRuleBuilderExtensions
+    Clase de extensiÃ³n LessRuleBuilderExtensions
     Contiene las extensiones de las validaciones Less
 */
 
 /// <summary>
-/// Clase de extensión <c>LessRuleBuilderExtensions</c>.
+/// Clase de extensiÃ³n <c>LessRuleBuilderExtensions</c>.
 /// Contiene las extensiones de las validaciones Less.
 /// </summary>
 /// <remarks>
@@ -30,8 +30,8 @@ public static class LessRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
-    /// <param name="min">Valor mínimo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
+    /// <param name="min">Valor mÃ­nimo que puede tener el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsLess<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, string? fieldName = null)
@@ -48,8 +48,8 @@ public static class LessRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
-    /// <param name="min">Valor mínimo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
+    /// <param name="min">Valor mÃ­nimo que puede tener el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsLessWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, string message)
@@ -66,8 +66,8 @@ public static class LessRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
-    /// <param name="min">Valor mínimo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
+    /// <param name="min">Valor mÃ­nimo que puede tener el campo.</param>
     /// <param name="fieldName">Nombre del campo.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsLessOrEqual<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, string? fieldName = null)
@@ -84,8 +84,8 @@ public static class LessRuleBuilderExtensions
     /// </summary>
     /// <typeparam name="T">Entidad a validar.</typeparam>
     /// <typeparam name="TProperty">Propiedad de la entidad.</typeparam>
-    /// <param name="ruleBuilder">Regla de validación.</param>
-    /// <param name="min">Valor mínimo que puede tener el campo.</param>
+    /// <param name="ruleBuilder">Regla de validaciÃ³n.</param>
+    /// <param name="min">Valor mÃ­nimo que puede tener el campo.</param>
     /// <param name="message">Mensaje a mostrar.</param>
     /// <returns>IRuleBuilder.</returns>
     public static IRuleBuilder<T, TProperty> IsLessOrEqualWithMessage<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, long min, string message)

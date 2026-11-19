@@ -1,4 +1,4 @@
-using Tests.Api.Models;
+ï»¿using Tests.Api.Models;
 using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Validations;
 using Microsoft.AspNetCore.Hosting;
@@ -44,10 +44,10 @@ namespace Tests.Api.EndpointsTests
                             services.AddControllers()
                                 .AddJsonOptions(options => options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull);
 
-                            /*** Configuración desde el AppSettings para FluentValidator. ***/
+                            /*** ConfiguraciÃ³n desde el AppSettings para FluentValidator. ***/
                             services.LoadValidations();
 
-                            /*** Configuración manual para FluentValidator. ***/
+                            /*** ConfiguraciÃ³n manual para FluentValidator. ***/
                             //services.LoadValidations(options => options.WithEnabled().WithFluentValidation("Tests.Api.Models"));
                         })
                         .Configure(application =>
@@ -105,7 +105,7 @@ namespace Tests.Api.EndpointsTests
         public void Validate_Domain_ChangeName()
         {
             // Arrange
-            var invalidName = "435_///3sdff·543";
+            var invalidName = "435_///3sdffÂ·543";
             var person = new Person(20, "Pedro", "pedro@gmail.com");
 
             // Act
