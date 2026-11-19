@@ -1,21 +1,21 @@
-﻿# <img src="https://github.com/kitpymes/template-netcore-validations/raw/master/docs/images/logo.png" height="30px"> Kitpymes.Core.Validations
+﻿# <img src="https://github.com/kitpymes/kitpymes-core-validations/raw/master/docs/images/logo.png" height="30px"> Kitpymes.Core.Validations
 
 **Validaciones para multiples proveedores**
 
-[![Build Status](https://github.com/kitpymes/template-netcore-validations/workflows/Kitpymes.Core.Validations/badge.svg)](https://github.com/kitpymes/template-netcore-validations/actions)
+[![Build Status](https://github.com/kitpymes/kitpymes-core-validations/actions/workflows/ci.yml/badge.svg)](https://github.com/kitpymes/kitpymes-core-validations/actions/workflows/ci.yml)
 [![NuGet Status](https://img.shields.io/nuget/v/Kitpymes.Core.Validations)](https://www.nuget.org/packages/Kitpymes.Core.Validations/)
 [![NuGet Download](https://img.shields.io/nuget/dt/Kitpymes.Core.Validations)](https://www.nuget.org/stats/packages/Kitpymes.Core.Validations?groupby=Version)
-[![License](https://img.shields.io/github/license/kitpymes/template-netcore-validations)](https://github.com/kitpymes/template-netcore-validations/blob/master/docs/LICENSE.txt)
-[![Size Repo](https://img.shields.io/github/repo-size/kitpymes/template-netcore-validations)](https://github.com/kitpymes/template-netcore-validations/)
-[![Last Commit](https://img.shields.io/github/last-commit/kitpymes/template-netcore-validations)](https://github.com/kitpymes/template-netcore-validations/)
+[![License](https://img.shields.io/github/license/kitpymes/kitpymes-core-validations)](https://github.com/kitpymes/kitpymes-core-validations/blob/master/docs/LICENSE.txt)
+[![Size Repo](https://img.shields.io/github/repo-size/kitpymes/kitpymes-core-validations)](https://github.com/kitpymes/kitpymes-core-validations/)
+[![Last Commit](https://img.shields.io/github/last-commit/kitpymes/kitpymes-core-validations)](https://github.com/kitpymes/kitpymes-core-validations/)
 
 ## 📋 Requerimientos 
 
-* Visual Studio = 2022
+* Visual Studio 2026 o superior
 
-* NET TargetFramework = net8.0
+* NET TargetFramework = net10.0
 
-* Net Core SDK = 8.0.x
+* SDK de .NET = 10.0.x
 
 * C# = 12
 
