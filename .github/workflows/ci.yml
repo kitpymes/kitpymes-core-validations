@@ -1,0 +1,102 @@
+name: ci
+
+# Compila y pasa los tests en cada subida a master y en cada PR.
+# En master, si la versión del proyecto aún no tiene etiqueta (vX.Y.Z), además
+# publica en NuGet y crea la etiqueta y la release en GitHub. Fusionar el PR que
+# sube la versión es, por tanto, la orden de publicar.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Una subida nueva a la misma rama cancela la ejecución anterior, salvo en master:
+# allí no se corta nunca una publicación a medias.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restaurar
+        run: dotnet restore Solution.sln
+
+      # En Debug: algunos tests de ficheros y zip sólo se compilan en Debug (#if DEBUG).
+      - name: Compilar
+        run: dotnet build Solution.sln --no-restore -c Debug
+
+      - name: Tests
+        run: dotnet test Solution.sln --no-build -c Debug
+
+  publish:
+    # Sólo en master y sólo si los tests han pasado.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: build-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # crear la etiqueta y la release
+      id-token: write   # Trusted Publishing: nuget.org da una clave temporal sin guardar ninguna aquí
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Ver si esta versión ya está publicada
+        id: version
+        run: |
+          version=$(dotnet msbuild Kitpymes.Core.Validations/Kitpymes.Core.Validations.csproj -getProperty:Version -p:Configuration=Release -p:SolutionDir=$PWD/)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "La versión $version ya tiene etiqueta: no hay nada que publicar."
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publicar=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sacar las notas de esta versión
+        if: steps.version.outputs.publicar == 'true'
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          primera=$(head -n 1 docs/RELEASE_NOTES.txt | tr -d '\r')
+          if [ "$primera" != "# v.$version" ]; then
+            echo "Las release notes empiezan por '$primera' y deberían empezar por '# v.$version'. No se publica."
+            exit 1
+          fi
+          awk 'NR > 1 && /^# v\./ { exit } NR > 1' docs/RELEASE_NOTES.txt | tr -d '\r' > notas.md
+
+      - name: Empaquetar
+        if: steps.version.outputs.publicar == 'true'
+        run: dotnet pack Solution.sln -c Release -o artifacts
+
+      - name: Iniciar sesión en NuGet (clave temporal de 1 hora)
+        if: steps.version.outputs.publicar == 'true'
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: kitpymes
+
+      - name: Publicar en NuGet
+        if: steps.version.outputs.publicar == 'true'
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      # Después de NuGet: si algo falla antes, no queda una release de un paquete que no existe.
+      - name: Crear etiqueta y release en GitHub
+        if: steps.version.outputs.publicar == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" --notes-file notas.md
