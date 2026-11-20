@@ -1,3 +1,24 @@
+# v.2.0.0
+Versión mayor: rompe a quien venga de la 1.0.8 (la última publicada en NuGet, .NET 5). Abajo, qué cambia y cómo migrar.
+
+- Requiere .NET 10 o superior.
+- Usa las librerías Kitpymes ya migradas desde NuGet (Shared 2.0.1, Results 1.0.0, Logger 2.0.0); quien la use debe migrar también esas (ver sus release notes).
+- El código pasa a github.com/kitpymes/kitpymes-core-validations y el paquete se publica desde GitHub Actions.
+
+## Cambios incompatibles y cómo migrar desde 1.0.8
+
+1. Espacios de nombres: antes había tres (Kitpymes.Core.Validations, .Abstractions y .FluentValidation).
+   - Kitpymes.Core.Validations.Extensions, .Settings y .Middleware: carga, configuración y middleware.
+   - Kitpymes.Core.Validations.Abstractions.Exceptions: excepciones de validación.
+   - Kitpymes.Core.Validations.FluentValidation.Extensions y .Settings: integración con FluentValidation.
+
+2. Reglas de FluentValidation
+   - RuleBuilderExtensions se reparte en una clase por regla (EmailRuleBuilderExtensions, FileRuleBuilderExtensions, RegexRuleBuilderExtensions, etc.). Los métodos se usan igual añadiendo el using de Kitpymes.Core.Validations.FluentValidation.Extensions.
+
+3. Clases eliminadas
+   - Messages y Resources: los mensajes vienen de Kitpymes.Core.Shared.
+   - ValidationsOptions.WithFluentValidation(params string[] assemblies): la configuración de FluentValidation pasa a sus Settings.
+
 # v.1.0.8
 - Se agrega un nuevo lanzador de excepciones de tipo "ApplicationException".
 
