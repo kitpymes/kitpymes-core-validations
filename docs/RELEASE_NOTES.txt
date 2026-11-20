@@ -2,7 +2,7 @@
 Versión mayor: rompe a quien venga de la 1.0.8 (la última publicada en NuGet, .NET 5). Abajo, qué cambia y cómo migrar.
 
 - Requiere .NET 10 o superior.
-- Usa las librerías Kitpymes ya migradas desde NuGet (Shared 2.0.1, Results 1.0.0, Logger 2.0.0); quien la use debe migrar también esas (ver sus release notes).
+- Usa las librerías Kitpymes ya migradas desde NuGet (Shared 2.0.1, Results 1.0.1, Logger 2.0.0); quien la use debe migrar también esas (ver sus release notes).
 - El código pasa a github.com/kitpymes/kitpymes-core-validations y el paquete se publica desde GitHub Actions.
 
 ## Cambios incompatibles y cómo migrar desde 1.0.8
