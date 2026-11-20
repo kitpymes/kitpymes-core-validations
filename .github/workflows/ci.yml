@@ -39,6 +39,28 @@ jobs:
       - name: Tests
         run: dotnet test Solution.sln --no-build -c Debug
 
+  # En cada PR comprueba que nuget.org confía en este repo (política de Trusted Publishing).
+  # Sin ella, fusionar un cambio de versión fallaría al publicar; así se ve antes de fusionar.
+  # No publica nada: sólo pide una clave temporal y la descarta.
+  nuget-policy:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Comprobar la política de NuGet
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: kitpymes
+
+      - name: Avisar si falta la política
+        if: failure()
+        run: |
+          echo "::error::Falta la política de Trusted Publishing de este repo en nuget.org (cuenta Kitpymes): owner kitpymes, repositorio ${{ github.event.repository.name }}, workflow ci.yml, sin entorno. Sin ella no se puede publicar."
+          exit 1
+
   publish:
     # Sólo en master y sólo si los tests han pasado.
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
