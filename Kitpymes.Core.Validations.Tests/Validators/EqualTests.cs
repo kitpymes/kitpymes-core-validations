@@ -13,11 +13,15 @@ public class EqualTests : ValidatorsTestBase
     [TestMethod]
     public void IsEqual_AddRules_Passing_InvalidArguments_Returns_Errors()
     {
+        // IsEqual marca error cuando los valores son iguales (Equals). Dos objetos nuevos distintos
+        // no lo son, ni "a" y "A": por eso se usa la misma instancia y el mismo texto.
+        var sameObject = FakeTypes.ReferenceTypes.ClassTypes.Class_New();
+
         var result = Validator
-            .AddRule(FakeTypes.ReferenceTypes.ClassTypes.Class_New(), x => x.IsEqual(FakeTypes.ReferenceTypes.ClassTypes.Class_New()))
+            .AddRule(sameObject, x => x.IsEqual(sameObject))
             .AddRule("a", x => x.IsEqual("a", FIELD_NAME))
             .AddRule(1, x => x.IsEqual(1, OTHER_FIELD_NAME, FIELD_NAME_COMPARE))
-            .AddRule("a", x => x.IsEqualWithMessage("A", MESSAGE))
+            .AddRule("a", x => x.IsEqualWithMessage("a", MESSAGE))
             ;
 
         Assert.IsFalse(result.IsValid);
