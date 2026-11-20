@@ -1,0 +1,40 @@
+name: auto-pr
+
+# Al subir una rama (que no sea master), abre su PR contra master si no lo tiene ya.
+# Título: el asunto del primer commit de la rama. Descripción: los mensajes de todos
+# sus commits, que explican qué cambia, por qué y qué revisar.
+# Requiere en el repo: Settings > Actions > General > "Allow GitHub Actions to create
+# and approve pull requests".
+on:
+  push:
+    branches-ignore: [master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Abrir el PR si no existe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rama="$GITHUB_REF_NAME"
+          if [ -n "$(gh pr list --head "$rama" --state open --json number --jq '.[].number')" ]; then
+            echo "La rama $rama ya tiene un PR abierto."
+            exit 0
+          fi
+          primero=$(git rev-list --reverse origin/master..HEAD | head -n 1)
+          if [ -z "$primero" ]; then
+            echo "La rama no tiene commits nuevos respecto a master."
+            exit 0
+          fi
+          titulo=$(git log -1 --format=%s "$primero")
+          git log --reverse --format='### %s%n%n%b' origin/master..HEAD > cuerpo.md
+          gh pr create --base master --head "$rama" --title "$titulo" --body-file cuerpo.md

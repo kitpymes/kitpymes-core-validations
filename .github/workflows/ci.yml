@@ -1,13 +1,12 @@
 name: ci
 
-# Compila y pasa los tests en cada subida a master y en cada PR.
+# Compila y pasa los tests en cada subida, a master o a cualquier rama. El resultado
+# aparece en el PR de la rama (que abre solo auto-pr.yml).
 # En master, si la versión del proyecto aún no tiene etiqueta (vX.Y.Z), además
 # publica en NuGet y crea la etiqueta y la release en GitHub. Fusionar el PR que
 # sube la versión es, por tanto, la orden de publicar.
 on:
   push:
-    branches: [master]
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -39,11 +38,11 @@ jobs:
       - name: Tests
         run: dotnet test Solution.sln --no-build -c Debug
 
-  # En cada PR comprueba que nuget.org confía en este repo (política de Trusted Publishing).
-  # Sin ella, fusionar un cambio de versión fallaría al publicar; así se ve antes de fusionar.
-  # No publica nada: sólo pide una clave temporal y la descarta.
+  # En cada rama (lo que luego es un PR) comprueba que nuget.org confía en este repo
+  # (política de Trusted Publishing). Sin ella, fusionar un cambio de versión fallaría al
+  # publicar; así se ve antes de fusionar. No publica nada: pide una clave temporal y la descarta.
   nuget-policy:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: read
