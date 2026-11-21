@@ -88,7 +88,7 @@ public class ValidationsMiddlewareTests
 
     #region UnauthorizedAccessException
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow("Development")]
     [DataRow("Production")]
     public async Task Passing_UnauthorizedAccessException_Returns_UnauthorizedStatusWithMessage(string environmentName)
@@ -118,7 +118,7 @@ public class ValidationsMiddlewareTests
 
     #region DefaultException
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow("Development")]
     [DataRow("Production")]
     public async Task Passing_Exception_Returns_InternalServerErrorStatusWithMessage(string environmentName)

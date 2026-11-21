@@ -23,7 +23,7 @@ public class EmailTests : ValidatorsTestBase
 
         Assert.IsFalse(result.IsValid);
 
-        var exception = Assert.ThrowsException<ValidationsException>(() => result.Throw());
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => result.Throw());
 
         Assert.IsNotNull(exception);
         Assert.IsTrue(exception.Contains(Messages.Email(value)));

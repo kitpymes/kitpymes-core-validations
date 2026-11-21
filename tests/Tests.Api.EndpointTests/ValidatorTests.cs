@@ -92,7 +92,7 @@ namespace Tests.Api.EndpointsTests
             var email = "ddd@@_.45r";
 
             // Act
-            var exception = Assert.ThrowsException<ValidationsException>(() => new Person(age, name, email));
+            var exception = Assert.ThrowsExactly<ValidationsException>(() => new Person(age, name, email));
 
             // Assert
             Assert.IsNotNull(exception);
@@ -109,7 +109,7 @@ namespace Tests.Api.EndpointsTests
             var person = new Person(20, "Pedro", "pedro@gmail.com");
 
             // Act
-            var exception = Assert.ThrowsException<ValidationsException>(() => person.ChangeName(invalidName));
+            var exception = Assert.ThrowsExactly<ValidationsException>(() => person.ChangeName(invalidName));
 
             // Assert
             Assert.IsNotNull(exception);
