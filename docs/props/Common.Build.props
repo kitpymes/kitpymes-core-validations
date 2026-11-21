@@ -21,12 +21,16 @@
     <NeutralLanguage>es-ES</NeutralLanguage>
   </PropertyGroup>
 
-  <!-- Muestra en la consola de errores, las advertencias como error en la compilación -->
+  <!-- Muestra en la consola de errores, las advertencias como error en la compilación.
+       La condición antigua comparaba con 'Debug|Release|AnyCPU', que no se cumple nunca.
+       Los avisos de vulnerabilidades de NuGet (NU1900-NU1904) no paran la compilación: un aviso
+       nuevo de un paquete no debe romper la pipeline de golpe; se ven igual en el registro. -->
   <Choose>
-    <When Condition=" '$(Configuration)|$(Platform)' == 'Debug|Release|AnyCPU' ">
+    <When Condition=" ('$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release') and '$(Platform)' == 'AnyCPU' ">
       <PropertyGroup>
         <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
       </PropertyGroup>
     </When>
     <Otherwise>

@@ -36,7 +36,17 @@ jobs:
         run: dotnet build Solution.sln --no-restore -c Debug
 
       - name: Tests
-        run: dotnet test Solution.sln --no-build -c Debug
+        run: dotnet test Solution.sln --no-build -c Debug --collect:"XPlat Code Coverage" --results-directory cobertura
+
+      # Muestra el porcentaje de líneas cubiertas por los tests (informativo: no para la pipeline).
+      - name: Cobertura
+        run: |
+          f=$(find cobertura -name coverage.cobertura.xml | head -n 1)
+          if [ -z "$f" ]; then echo "::warning::No se generó el informe de cobertura."; exit 0; fi
+          rate=$(grep -o 'line-rate="[0-9.]*"' "$f" | head -n 1 | grep -o '[0-9.]*')
+          pct=$(awk -v r="$rate" 'BEGIN { printf "%.1f", r * 100 }')
+          echo "Cobertura de líneas: $pct %"
+          echo "### Cobertura de líneas: $pct %" >> "$GITHUB_STEP_SUMMARY"
 
   # En cada rama (lo que luego es un PR) comprueba que nuget.org confía en este repo
   # (política de Trusted Publishing). Sin ella, fusionar un cambio de versión fallaría al

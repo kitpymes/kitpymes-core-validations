@@ -24,7 +24,7 @@ public class CustomTests : ValidatorsTestBase
 
         Assert.IsFalse(result.IsValid);
 
-        var exception = Assert.ThrowsException<ValidationsException>(() => result.Throw());
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => result.Throw());
 
         Assert.IsTrue(exception.Contains(MESSAGE));
         Assert.IsTrue(exception.Contains(OTHER_MESSAGE));

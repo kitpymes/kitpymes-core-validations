@@ -23,7 +23,7 @@ public class RangeTests : ValidatorsTestBase
 
         Assert.IsFalse(result.IsValid);
 
-        var exception = Assert.ThrowsException<ValidationsException>(() => result.Throw());
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => result.Throw());
 
         Assert.IsNotNull(exception);
         Assert.IsTrue(exception.Contains(Messages.InsideRange(min, max)));
@@ -47,7 +47,7 @@ public class RangeTests : ValidatorsTestBase
 
         Assert.IsFalse(result.IsValid);
 
-        var exception = Assert.ThrowsException<ValidationsException>(() => result.Throw());
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => result.Throw());
 
         Assert.IsNotNull(exception);
         Assert.IsTrue(exception.Contains(Messages.InsideOrEqualRange(min, max)));
@@ -75,7 +75,7 @@ public class RangeTests : ValidatorsTestBase
 
         Assert.IsFalse(result.IsValid);
 
-        var exception = Assert.ThrowsException<ValidationsException>(() => result.Throw());
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => result.Throw());
 
         Assert.IsNotNull(exception);
         Assert.IsTrue(exception.Contains(Messages.OutRange(min, max)));
@@ -99,7 +99,7 @@ public class RangeTests : ValidatorsTestBase
 
         Assert.IsFalse(result.IsValid);
 
-        var exception = Assert.ThrowsException<ValidationsException>(() => result.Throw());
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => result.Throw());
 
         Assert.IsNotNull(exception);
         Assert.IsTrue(exception.Contains(Messages.OutOrEqualRange(min, max)));
