@@ -31,6 +31,17 @@ jobs:
       - name: Restaurar
         run: dotnet restore Solution.sln
 
+      # El analizador de hilos estuvo años sin ejecutarse (Update en vez de Include) y nadie lo vio:
+      # se comprueba en cada proyecto que no es de tests que se carga y que VSTHRD110 es un error.
+      - name: Comprobar Microsoft.VisualStudio.Threading.Analyzers
+        run: |
+          for p in $(git ls-files '*.csproj' | grep -vi test); do
+            props="-p:Configuration=Debug -p:SolutionDir=$PWD/"
+            dotnet msbuild "$p" $props -target:ResolvePackageAssets -getItem:Analyzer | grep -qi 'microsoft.visualstudio.threading.analyzers' || { echo "::error::$p no carga Microsoft.VisualStudio.Threading.Analyzers."; exit 1; }
+            dotnet msbuild "$p" $props -getProperty:WarningsAsErrors | grep -q 'VSTHRD110' || { echo "::error::$p no trata VSTHRD110 como error."; exit 1; }
+            echo "$p: Threading.Analyzers cargado y VSTHRD110 como error."
+          done
+
       # En Debug: algunos tests de ficheros y zip sólo se compilan en Debug (#if DEBUG).
       - name: Compilar
         run: dotnet build Solution.sln --no-restore -c Debug
