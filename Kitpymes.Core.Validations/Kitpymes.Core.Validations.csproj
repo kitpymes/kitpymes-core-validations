@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   
-  <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
-  <Import Project="$(SolutionDir)docs/props/Pack.Build.props" Condition="Exists('$(SolutionDir)docs/props/Pack.Build.props')" />
+  <Import Project="$(KitpymesRoot)docs/props/Common.Build.props" Condition="Exists('$(KitpymesRoot)docs/props/Common.Build.props')" />
+  <Import Project="$(KitpymesRoot)docs/props/Pack.Build.props" Condition="Exists('$(KitpymesRoot)docs/props/Pack.Build.props')" />
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
   </ItemGroup>
 
 </Project>

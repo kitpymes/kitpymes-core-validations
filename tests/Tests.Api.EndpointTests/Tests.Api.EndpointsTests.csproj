@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
+  <Import Project="$(KitpymesRoot)docs/props/Common.Build.props" Condition="Exists('$(KitpymesRoot)docs/props/Common.Build.props')" />
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)tests\Tests.Api.Models\Tests.Api.Models.csproj" />
+    <ProjectReference Include="$(KitpymesRoot)tests\Tests.Api.Models\Tests.Api.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations\Kitpymes.Core.Validations.csproj" />
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations\Kitpymes.Core.Validations.csproj" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
     <ProjectReference Include="..\Tests.Api\Tests.Api.csproj" />
   </ItemGroup>
 
