@@ -88,6 +88,21 @@ jobs:
   # En cada rama, tests de mutación con Stryker.NET: mide si los tests detectan fallos metidos
   # a propósito. Un mutante que sobrevive es un test que falta. La puntuación sale en el resumen.
   # Se muta cada proyecto que tiene su proyecto de tests al lado (Kitpymes.X -> Kitpymes.X.Tests).
+      # Empaqueta igual que el job publish, para ver en la rama que la publicación no fallará al empaquetar.
+      # Tiene que salir un .nupkg por cada librería.
+      - name: Empaquetar como en la publicación
+        run: |
+          n=0
+          for p in $(git ls-files 'Kitpymes.*.csproj' | grep -v Tests); do
+            dotnet pack "$p" -c Release -o artifacts-prueba
+            n=$((n + 1))
+          done
+          hechos=$(ls artifacts-prueba/*.nupkg | wc -l)
+          if [ "$hechos" -ne "$n" ]; then
+            echo "::error::Salen $hechos paquetes y hay $n librerías."; exit 1
+          fi
+          ls artifacts-prueba
+
   mutation:
     if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -189,7 +204,12 @@ jobs:
 
       - name: Empaquetar
         if: steps.version.outputs.publicar == 'true'
-        run: dotnet pack Solution.sln -c Release -o artifacts
+        # Sólo las librerías, no la solución: con la solución, el proyecto web de pruebas tests/Tests.Api
+        # fallaba con "packaging has been disabled" y no se publicaba nada.
+        run: |
+          for p in $(git ls-files 'Kitpymes.*.csproj' | grep -v Tests); do
+            dotnet pack "$p" -c Release -o artifacts
+          done
 
       - name: Iniciar sesión en NuGet (clave temporal de 1 hora)
         if: steps.version.outputs.publicar == 'true'
