@@ -21,6 +21,13 @@
     <NeutralLanguage>es-ES</NeutralLanguage>
   </PropertyGroup>
 
+  <!-- VSTHRD110 (una Task descartada sin await en un método síncrono) es error en cualquier configuración y plataforma,
+       no sólo cuando TreatWarningsAsErrors está activo (Debug/Release y AnyCPU). Sin condición: en los proyectos de
+       tests no hace nada, porque allí no se carga el analizador. -->
+  <PropertyGroup>
+    <WarningsAsErrors>$(WarningsAsErrors);VSTHRD110</WarningsAsErrors>
+  </PropertyGroup>
+
   <!-- Muestra en la consola de errores, las advertencias como error en la compilación.
        La condición antigua comparaba con 'Debug|Release|AnyCPU', que no se cumple nunca.
        Los avisos de vulnerabilidades de NuGet (NU1900-NU1904) no paran la compilación: un aviso
@@ -105,8 +112,6 @@
         <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
         <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
         <CodeAnalysisRuleSet>$(KitpymesRoot)docs\analyzers\stylecop.ruleset</CodeAnalysisRuleSet>
-        <!-- VSTHRD110: una Task descartada sin await en un método síncrono es un error, también fuera de Debug/Release. -->
-        <WarningsAsErrors>$(WarningsAsErrors);VSTHRD110</WarningsAsErrors>
       </PropertyGroup>
 
       <ItemGroup>
