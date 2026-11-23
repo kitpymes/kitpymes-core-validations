@@ -37,9 +37,12 @@ jobs:
         run: |
           for p in $(git ls-files '*.csproj' | grep -vi test); do
             props="-p:Configuration=Debug -p:SolutionDir=$PWD/"
-            dotnet msbuild "$p" $props -target:ResolvePackageAssets -getItem:Analyzer | grep -qi 'microsoft.visualstudio.threading.analyzers' || { echo "::error::$p no carga Microsoft.VisualStudio.Threading.Analyzers."; exit 1; }
-            dotnet msbuild "$p" $props -getProperty:WarningsAsErrors | grep -q 'VSTHRD110' || { echo "::error::$p no trata VSTHRD110 como error."; exit 1; }
-            echo "$p: Threading.Analyzers cargado y VSTHRD110 como error."
+            # Tras restaurar, project.assets.json lista los paquetes que el proyecto referencia de verdad.
+            assets="$(dirname "$p")/obj/project.assets.json"
+            grep -q '"Microsoft.VisualStudio.Threading.Analyzers/' "$assets" || { echo "::error::$p no referencia Microsoft.VisualStudio.Threading.Analyzers."; exit 1; }
+            errores=$(dotnet msbuild "$p" $props -getProperty:WarningsAsErrors)
+            echo "$errores" | grep -q 'VSTHRD110' || { echo "$errores"; echo "::error::$p no trata VSTHRD110 como error."; exit 1; }
+            echo "$p: Threading.Analyzers referenciado y VSTHRD110 como error."
           done
 
       # En Debug: algunos tests de ficheros y zip sólo se compilan en Debug (#if DEBUG).
