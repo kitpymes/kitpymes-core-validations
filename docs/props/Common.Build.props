@@ -105,10 +105,13 @@
         <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
         <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
         <CodeAnalysisRuleSet>$(SolutionDir)docs\analyzers\stylecop.ruleset</CodeAnalysisRuleSet>
+        <!-- VSTHRD110: una Task descartada sin await en un método síncrono es un error, también fuera de Debug/Release. -->
+        <WarningsAsErrors>$(WarningsAsErrors);VSTHRD110</WarningsAsErrors>
       </PropertyGroup>
 
       <ItemGroup>
-        <PackageReference Update="Microsoft.VisualStudio.Threading.Analyzers" Version="17.4.27" PrivateAssets="All" />
+        <!-- Include y no Update: con Update no se añadía a ningún proyecto y el analizador no se ejecutaba nunca. -->
+        <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1" PrivateAssets="All" IncludeAssets="runtime; build; native; contentfiles; analyzers" />
         <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" IncludeAssets="Analyzers;Build" PrivateAssets="All" />
         <AdditionalFiles Include="$(SolutionDir)docs\analyzers\stylecop.json" Visible="false" />
       </ItemGroup>
