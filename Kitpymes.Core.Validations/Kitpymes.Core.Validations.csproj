@@ -12,9 +12,9 @@
 
     <PackageReference Include="Kitpymes.Core.Results" Version="1.0.1" />
     
-    <PackageReference Include="Kitpymes.Core.Logger" Version="2.0.0" />
+    <PackageReference Include="Kitpymes.Core.Logger" Version="2.1.0" />
 
-    <PackageReference Include="Kitpymes.Core.Logger.Abstractions" Version="2.0.0" />
+    <PackageReference Include="Kitpymes.Core.Logger.Abstractions" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
