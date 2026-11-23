@@ -85,9 +85,6 @@ jobs:
           echo "Cobertura de líneas: $pct %"
           echo "### Cobertura de líneas: $pct %" >> "$GITHUB_STEP_SUMMARY"
 
-  # En cada rama, tests de mutación con Stryker.NET: mide si los tests detectan fallos metidos
-  # a propósito. Un mutante que sobrevive es un test que falta. La puntuación sale en el resumen.
-  # Se muta cada proyecto que tiene su proyecto de tests al lado (Kitpymes.X -> Kitpymes.X.Tests).
       # Empaqueta igual que el job publish, para ver en la rama que la publicación no fallará al empaquetar.
       # Tiene que salir un .nupkg por cada librería.
       - name: Empaquetar como en la publicación
@@ -97,12 +94,18 @@ jobs:
             dotnet pack "$p" -c Release -o artifacts-prueba
             n=$((n + 1))
           done
+          if [ "$n" -eq 0 ]; then
+            echo "::error::No se ha encontrado ninguna librería que empaquetar."; exit 1
+          fi
           hechos=$(ls artifacts-prueba/*.nupkg | wc -l)
           if [ "$hechos" -ne "$n" ]; then
             echo "::error::Salen $hechos paquetes y hay $n librerías."; exit 1
           fi
           ls artifacts-prueba
 
+  # En cada rama, tests de mutación con Stryker.NET: mide si los tests detectan fallos metidos
+  # a propósito. Un mutante que sobrevive es un test que falta. La puntuación sale en el resumen.
+  # Se muta cada proyecto que tiene su proyecto de tests al lado (Kitpymes.X -> Kitpymes.X.Tests).
   mutation:
     if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest

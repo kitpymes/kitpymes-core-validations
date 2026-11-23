@@ -3,7 +3,7 @@ Versión menor y no parche: corrige vulnerabilidades sin cambiar la API pública
 Corrección de seguridad: Kitpymes.Core.Logger 2.0.0 traía dependencias con vulnerabilidades conocidas, que heredaba quien instalaba Validations.
 - Alta: Microsoft.Data.SqlClient 5.0.1 (GHSA-98g6-xh36-x2p7) y Azure.Identity 1.6.0 (GHSA-5mfx-4wcx-rv27). Moderada: Azure.Identity (GHSA-wvxc-855f-jvrv, GHSA-m5vv-6r4h-3vj9), System.IdentityModel.Tokens.Jwt y Microsoft.IdentityModel.JsonWebTokens 6.21.0 (GHSA-59j7-ghrg-fj52), MailKit 2.6.0 (GHSA-9j88-vvj5-vhgr) y MimeKit 2.6.0 (GHSA-g7hc-96xr-gvvx).
 - Pasa a Kitpymes.Core.Logger y Kitpymes.Core.Logger.Abstractions 2.1.0, que las corrige.
-- Sin cambios en la API pública ni en el código de Validations. El log por email de Logger cambia de comportamiento en la 2.1.0 (ver sus release notes): quien instala Validations recibe Serilog 4.x y MailKit 4.x como dependencias transitivas (NU1605 si fijaba Serilog 3.x o MailKit 2.x) y los lotes que fallan se reintentan de los lotes que fallan.
+- Sin cambios en la API pública ni en el código de Validations. El log por email de Logger cambia de comportamiento en la 2.1.0 (ver sus release notes): quien instala Validations recibe Serilog 4.x y MailKit 4.x como dependencias transitivas (NU1605 si fijaba Serilog 3.x o MailKit 2.x) y los lotes que fallan se reintentan más tarde.
 
 # v.2.0.0
 Versión mayor: rompe a quien venga de la 1.0.8 (la última publicada en NuGet, .NET 5). Abajo, qué cambia y cómo migrar.
