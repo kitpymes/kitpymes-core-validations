@@ -5,9 +5,11 @@ name: auto-pr
 # sus commits, que explican qué cambia, por qué y qué revisar.
 # Requiere en el repo: Settings > Actions > General > "Allow GitHub Actions to create
 # and approve pull requests".
+# Las ramas exp/... no abren PR: los experimentos se hacen en un git worktree local y no se suben,
+# pero si alguna se sube por error, no deja un PR abierto que luego no se puede cerrar desde fuera.
 on:
   push:
-    branches-ignore: [master]
+    branches-ignore: [master, 'exp/**']
 
 permissions:
   contents: read
