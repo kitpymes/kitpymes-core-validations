@@ -47,18 +47,24 @@ jobs:
           done
 
       # Prueba de que el analizador de hilos se ejecuta de verdad (no sólo que está referenciado):
-      # un fichero temporal con una Task descartada en un método síncrono tiene que dar error VSTHRD110.
+      # un fichero temporal con una Task descartada en un método síncrono tiene que dar "error VSTHRD110",
+      # con TreatWarningsAsErrors activo y desactivado (así se prueba que VSTHRD110 es error por sí solo).
+      # La salida de dotnet no se muestra si todo va bien: sus "error VSTHRD110" saldrían como anotaciones de error.
       - name: Prueba de que VSTHRD110 para la compilación
         run: |
           p=$(git ls-files '*.csproj' | grep -vi test | head -n 1)
           f="$(dirname "$p")/ComprobacionVsthrd110.cs"
           printf 'namespace Kitpymes.Comprobacion\n{\n    internal static class ComprobacionVsthrd110\n    {\n        internal static void Descartar() { System.Threading.Tasks.Task.Delay(1); }\n    }\n}\n' > "$f"
-          if dotnet build "$p" --no-restore -c Debug -p:SolutionDir="$PWD/" > vsthrd110.log 2>&1; then
-            rm "$f"; echo "::error::$p compila con una Task descartada: VSTHRD110 no se ejecuta."; exit 1
-          fi
+          for twae in true false; do
+            if dotnet build "$p" --no-restore -c Debug -p:SolutionDir="$PWD/" -p:TreatWarningsAsErrors=$twae > vsthrd110.log 2>&1; then
+              rm "$f"; echo "::error::$p compila con una Task descartada (TreatWarningsAsErrors=$twae): VSTHRD110 no para la compilación."; exit 1
+            fi
+            if ! grep -q 'error VSTHRD110' vsthrd110.log; then
+              rm "$f"; sed 's/error/fallo/g' vsthrd110.log; echo "::error::La compilación falló, pero no por error VSTHRD110 (TreatWarningsAsErrors=$twae)."; exit 1
+            fi
+            echo "$p: error VSTHRD110 con TreatWarningsAsErrors=$twae."
+          done
           rm "$f"
-          grep -q 'VSTHRD110' vsthrd110.log || { cat vsthrd110.log; echo "::error::La compilación falló, pero no por VSTHRD110."; exit 1; }
-          echo "$p: VSTHRD110 detectado y la compilación se para."
 
       # En Debug: algunos tests de ficheros y zip sólo se compilan en Debug (#if DEBUG).
       - name: Compilar
