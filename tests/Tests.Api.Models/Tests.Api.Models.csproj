@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Import Project="$(SolutionDir)docs/props/Common.Build.props" Condition="Exists('$(SolutionDir)docs/props/Common.Build.props')" />
+  <Import Project="$(KitpymesRoot)docs/props/Common.Build.props" Condition="Exists('$(KitpymesRoot)docs/props/Common.Build.props')" />
 
   <!-- Proyecto de apoyo a los tests: no se publica en NuGet. -->
   <PropertyGroup>
@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations\Kitpymes.Core.Validations.csproj" PrivateAssets="All" />
-    <ProjectReference Include="$(SolutionDir)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" PrivateAssets="All" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations\Kitpymes.Core.Validations.csproj" PrivateAssets="All" />
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

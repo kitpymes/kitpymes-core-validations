@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    Raíz del repo para las rutas de docs/props y de los proyectos. Antes se usaba $(SolutionDir), que sólo
+    tiene el valor correcto al compilar desde la solución: al compilar o analizar un proyecto suelto
+    (dotnet build de un .csproj, Stryker.NET) faltaba o apuntaba a otra carpeta, y el proyecto se quedaba
+    sin TargetFramework.
+  -->
+  <PropertyGroup>
+    <KitpymesRoot>$(MSBuildThisFileDirectory)</KitpymesRoot>
+  </PropertyGroup>
+</Project>
