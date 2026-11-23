@@ -48,7 +48,9 @@ jobs:
 
       # Prueba de que el analizador de hilos se ejecuta de verdad (no sólo que está referenciado):
       # un fichero temporal con una Task descartada en un método síncrono tiene que dar "error VSTHRD110",
-      # con TreatWarningsAsErrors activo y desactivado (así se prueba que VSTHRD110 es error por sí solo).
+      # con TreatWarningsAsErrors y MSBuildTreatWarningsAsErrors activos y desactivados. Common.Build.props pone
+      # MSBuildTreatWarningsAsErrors=true en Debug, que convierte todos los avisos en errores: si no se desactiva
+      # también, la vuelta "false" no prueba que VSTHRD110 sea error por sí solo.
       # La salida de dotnet no se muestra si todo va bien: sus "error VSTHRD110" saldrían como anotaciones de error.
       - name: Prueba de que VSTHRD110 para la compilación
         run: |
@@ -56,7 +58,7 @@ jobs:
           f="$(dirname "$p")/ComprobacionVsthrd110.cs"
           printf 'namespace Kitpymes.Comprobacion\n{\n    internal static class ComprobacionVsthrd110\n    {\n        internal static void Descartar() { System.Threading.Tasks.Task.Delay(1); }\n    }\n}\n' > "$f"
           for twae in true false; do
-            if dotnet build "$p" --no-restore -c Debug -p:SolutionDir="$PWD/" -p:TreatWarningsAsErrors=$twae > vsthrd110.log 2>&1; then
+            if dotnet build "$p" --no-restore -c Debug -p:SolutionDir="$PWD/" -p:TreatWarningsAsErrors=$twae -p:MSBuildTreatWarningsAsErrors=$twae > vsthrd110.log 2>&1; then
               rm "$f"; echo "::error::$p compila con una Task descartada (TreatWarningsAsErrors=$twae): VSTHRD110 no para la compilación."; exit 1
             fi
             if ! grep -q 'error VSTHRD110' vsthrd110.log; then
