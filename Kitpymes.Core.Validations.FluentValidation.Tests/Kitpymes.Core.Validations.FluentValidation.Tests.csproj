@@ -5,6 +5,8 @@
   <ItemGroup>
     <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.Abstractions\Kitpymes.Core.Validations.Abstractions.csproj" />
     <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations\Kitpymes.Core.Validations.csproj" />
+    <!-- Directa y no sólo a través de Validations: Stryker sólo muta los proyectos que el de tests referencia directamente. -->
+    <ProjectReference Include="$(KitpymesRoot)Kitpymes.Core.Validations.FluentValidation\Kitpymes.Core.Validations.FluentValidation.csproj" />
   </ItemGroup>
 
   <ItemGroup>
