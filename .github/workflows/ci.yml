@@ -115,11 +115,13 @@ jobs:
               # falta, se genera aquí y se muestra para copiarlo al repo (sólo las que están en las notas).
               dotnet pack "$p" -c Release -o artifacts-supresiones -p:ApiCompatGenerateSuppressionFile=true > /dev/null || true
               f="$(dirname "$p")/CompatibilitySuppressions.xml"
-              if [ -f "$f" ]; then echo "----- $f -----"; cat "$f"; echo "-----"; fi
-              echo "::error::No se pudo empaquetar $p."; exit 1
+              if [ -f "$f" ]; then echo "----- $f -----"; cat "$f"; echo; echo "-----"; fi
+              echo "::error::No se pudo empaquetar $p."; fallo=1
             fi
             n=$((n + 1))
           done
+          # Se sigue con las demás librerías para sacar todos los ficheros de supresiones de una vez.
+          if [ "${fallo:-0}" -ne 0 ]; then exit 1; fi
           if [ "$n" -eq 0 ]; then
             echo "::error::No se ha encontrado ninguna librería que empaquetar."; exit 1
           fi
