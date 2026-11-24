@@ -54,7 +54,6 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
         ["MaximumLengthValidator"] = "Validations.LongitudMaxima",
         ["MinimumLengthValidator"] = "Validations.LongitudMinima",
         ["EmailValidator"] = "Validations.Email",
-        ["AspNetCoreCompatibleEmailValidator"] = "Validations.Email",
         ["RegularExpressionValidator"] = "Validations.Formato",
         ["GreaterThanValidator"] = "Validations.Mayor",
         ["GreaterThanOrEqualValidator"] = "Validations.MayorOIgual",
@@ -93,8 +92,6 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
     /// <inheritdoc/>
     public async ValueTask<Result> ValidateAsync(T instance, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (instance is null)
         {
             var nullMessage = English

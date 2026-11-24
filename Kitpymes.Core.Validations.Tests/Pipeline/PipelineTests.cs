@@ -22,10 +22,13 @@ public class PipelineTests
     }
 
     private static Task<Result> Check(IServiceCollection services, params Type[] requests)
+        => Check(services, requests, Array.Empty<Type>());
+
+    private static async Task<Result> Check(IServiceCollection services, Type[] commands, Type[] queries)
     {
         using var provider = services.BuildServiceProvider();
         var check = provider.GetRequiredService<IValidationStartupCheck>();
-        return check.CheckAsync(new Catalog(requests), provider, CancellationToken.None);
+        return await check.CheckAsync(new Catalog(commands, queries), provider, CancellationToken.None);
     }
 
     [TestMethod]
@@ -166,5 +169,84 @@ public class PipelineTests
         var check = provider.GetRequiredService<IValidationStartupCheck>();
 
         await Assert.ThrowsExactlyAsync<OperationCanceledException>(() => check.CheckAsync(new Catalog(typeof(CreateOrder)), provider, source.Token));
+    }
+
+    [TestMethod]
+    public async Task StartupCheck_Also_Looks_At_Queries_In_Order()
+    {
+        var services = Services();
+        services.Remove(services.Single(d => d.ImplementationType == typeof(IncludedCommon)));
+
+        var result = await Check(services, new[] { typeof(WithoutValidator) }, new[] { typeof(WithField), typeof(Included), typeof(CreateOrder) });
+
+        Assert.IsTrue(result.IsFailure);
+        var lines = result.Error.Message.Split(Environment.NewLine);
+        Assert.AreEqual("La validación no está bien configurada:", lines[0]);
+        Assert.AreEqual(3, lines.Length);
+        StringAssert.StartsWith(lines[1], "- " + typeof(WithField).FullName);
+        StringAssert.StartsWith(lines[2], "- " + typeof(WithoutValidator).FullName);
+    }
+
+    [TestMethod]
+    public async Task StartupCheck_Accepts_A_Validator_That_Includes_Another()
+    {
+        var services = Services();
+        services.Remove(services.Single(d => d.ImplementationType == typeof(IncludedCommon)));
+
+        var result = await Check(services, new[] { typeof(Included) }, Array.Empty<Type>());
+
+        Assert.IsTrue(result.IsSuccess, result.Error?.Message ?? string.Empty);
+    }
+
+    [TestMethod]
+    public async Task StartupCheck_Does_Not_Count_Other_Behaviors()
+    {
+        var services = Services();
+        services.Remove(services.Single(d => d.ServiceType == typeof(IPipelineBehavior<,>)));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(OtherBehavior<,>));
+
+        var result = await Check(services, new[] { typeof(CreateOrder) }, new[] { typeof(BadRoot) });
+
+        Assert.IsTrue(result.IsFailure);
+        StringAssert.Contains(result.Error.Message, "no está registrado para " + typeof(CreateOrder).FullName);
+        StringAssert.Contains(result.Error.Message, "no está registrado para " + typeof(BadRoot).FullName);
+    }
+
+    [TestMethod]
+    public async Task StartupCheck_And_Behavior_Reject_Null_Arguments()
+    {
+        using var provider = Services().BuildServiceProvider();
+        var check = provider.GetRequiredService<IValidationStartupCheck>();
+        var behavior = provider.GetServices<IPipelineBehavior<CreateOrder, Result<int>>>().Single();
+
+        await Assert.ThrowsExactlyAsync<ArgumentNullException>(() => check.CheckAsync(null!, provider, CancellationToken.None));
+        await Assert.ThrowsExactlyAsync<ArgumentNullException>(() => check.CheckAsync(new Catalog(), null!, CancellationToken.None));
+        await Assert.ThrowsExactlyAsync<ArgumentNullException>(() => behavior.HandleAsync(new CreateOrder(), null!, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task Behavior_Errors_Say_Which_Request()
+    {
+        using var provider = Services().BuildServiceProvider();
+        var twice = provider.GetServices<IPipelineBehavior<Twice, Result>>().Single();
+        var manual = provider.GetServices<IPipelineBehavior<ManualRequest, Result>>().Single();
+
+        var many = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => twice.HandleAsync(new Twice(), () => Task.FromResult(Result.Success()), CancellationToken.None));
+        var empty = await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => manual.HandleAsync(new ManualRequest { Value = "null" }, () => Task.FromResult(Result.Success()), CancellationToken.None));
+
+        Assert.AreEqual("Twice tiene 2 validadores registrados y sólo puede tener uno.", many.Message);
+        Assert.AreEqual("El validador ManualValidator de ManualRequest devolvió un resultado nulo.", empty.Message);
+    }
+
+    [TestMethod]
+    public void Old_Settings_Still_Register_FluentValidation()
+    {
+        var off = new ServiceCollection();
+        off.LoadValidations(new Settings.ValidationsSettings { Enabled = false, FluentValidationSettings = new () { Enabled = true, Assemblies = new () { typeof(PipelineTests).Assembly.GetName().Name! } } });
+        Assert.AreEqual(0, off.Count);
+
+        var on = new ServiceCollection();
+        on.LoadValidations(new Settings.ValidationsSettings { Enabled = true, FluentValidationSettings = new () { Enabled = true, Assemblies = new () { typeof(PipelineTests).Assembly.GetName().Name! } } });
+        Assert.IsTrue(on.Count > 0);
     }
 }

@@ -31,6 +31,8 @@ public sealed class Ping : IQuery<Result>
 
 public sealed class WithoutValidator : ICommand<Result>
 {
+    public string? Ignored { set => _ = value; }
+
     public string? Value { get; set; }
 }
 
@@ -81,13 +83,44 @@ public abstract class AbstractValidatorOfCreateOrder : Validator<CreateOrder>
 {
 }
 
+public sealed class Included : ICommand<Result>
+{
+    public string? Value { get; set; }
+}
+
+public sealed class IncludedCommon : Validator<Included>
+{
+    public IncludedCommon() => RuleFor(x => x.Value).Required();
+}
+
+public sealed class IncludedValidator : Validator<Included>
+{
+    public IncludedValidator() => Include(new IncludedCommon());
+}
+
+public sealed class OtherBehavior<TRequest, TResult> : IPipelineBehavior<TRequest, TResult>
+    where TRequest : notnull
+    where TResult : Result
+{
+    public Task<TResult> HandleAsync(TRequest request, NextHandler<TResult> next, CancellationToken cancellationToken) => next();
+}
+
 public sealed class Catalog : IMediatorCatalog
 {
-    public Catalog(params Type[] requests) => Commands = requests;
+    public Catalog(params Type[] commands)
+        : this(commands, Array.Empty<Type>())
+    {
+    }
+
+    public Catalog(Type[] commands, Type[] queries)
+    {
+        Commands = commands;
+        Queries = queries;
+    }
 
     public IReadOnlyCollection<Type> Commands { get; }
 
-    public IReadOnlyCollection<Type> Queries { get; } = Array.Empty<Type>();
+    public IReadOnlyCollection<Type> Queries { get; }
 
     public IReadOnlyCollection<Type> Notifications { get; } = Array.Empty<Type>();
 }

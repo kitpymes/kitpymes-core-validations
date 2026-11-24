@@ -37,8 +37,6 @@ public abstract class Validator<T> : IValidator<T>, IValidatorConfiguration
     /// <inheritdoc/>
     public ValueTask<Result> ValidateAsync(T instance, CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
         if (instance is null)
         {
             return new ValueTask<Result>(Result.Failure(Error.Validation(ValidationErrorCodes.Invalid, Messages.NullInstance(typeof(T).Name))));

@@ -250,7 +250,7 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
     {
         ArgumentNullException.ThrowIfNull(validator);
 
-        if (typeof(TChild) != (Nullable.GetUnderlyingType(typeof(TProperty)) ?? typeof(TProperty)))
+        if (typeof(TChild) != typeof(TProperty))
         {
             throw new InvalidOperationException($"SetValidator en el campo '{_path.Path}' necesita un validador de {typeof(TProperty).Name}, no de {typeof(TChild).Name}.");
         }

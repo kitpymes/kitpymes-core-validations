@@ -18,6 +18,17 @@ public enum Days
     Tuesday = 2,
 }
 
+public readonly struct Money : IComparable<Money>
+{
+    public Money(decimal amount) => Amount = amount;
+
+    public decimal Amount { get; }
+
+    public int CompareTo(Money other) => Amount.CompareTo(other.Amount);
+
+    public override string ToString() => Amount.ToString(System.Globalization.CultureInfo.InvariantCulture) + " EUR";
+}
+
 public sealed class Address
 {
     public string? Street { get; set; }
@@ -62,6 +73,8 @@ public sealed class Order
     public DateTime To { get; set; }
 
     public object? Thing { get; set; }
+
+    public Money Price { get; set; }
 
     public string? Field;
 
