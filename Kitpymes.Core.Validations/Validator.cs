@@ -8,7 +8,6 @@
 namespace Kitpymes.Core.Validations;
 
 using System;
-using Kitpymes.Core.Shared.Extensions;
 
 /*
     Configuración de las opciones comunes de los validadores Validator
@@ -29,12 +28,10 @@ public static class Validator
     /// </summary>
     /// <param name="value">Valor a validar.</param>
     /// <param name="options">Validadores disponibles.</param>
-    /// <returns>ValidatorRule.</returns>
+    /// <returns>Una cadena nueva, con sus propios errores.</returns>
     public static ValidatorRule AddRule(object? value, Action<ValidatorRuleOptions> options)
     {
-        options.ToConfigureOrDefault(new ValidatorRuleOptions(value));
-
-        return new ValidatorRule();
+        return new ValidatorRule().AddRule(value, options);
     }
 
     /// <summary>
@@ -42,11 +39,9 @@ public static class Validator
     /// </summary>
     /// <param name="condition">Condición a validar.</param>
     /// <param name="message">Mensaje de error a mostrar.</param>
-    /// <returns>ValidatorRule.</returns>
+    /// <returns>Una cadena nueva, con sus propios errores.</returns>
     public static ValidatorRule AddRule(Func<bool> condition, string message)
     {
-        ValidatorRule.Add(() => condition is not null && condition(), message.ToThrowIfNullOrEmpty());
-
-        return new ValidatorRule();
+        return new ValidatorRule().AddRule(condition, message);
     }
 }

@@ -1,4 +1,4 @@
-﻿// -----------------------------------------------------------------------
+﻿﻿// -----------------------------------------------------------------------
 // <copyright file="ValidatorRule.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -9,7 +9,6 @@ namespace Kitpymes.Core.Validations;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Shared.Util;
@@ -22,34 +21,42 @@ using Kitpymes.Core.Validations.Abstractions.Exceptions;
 
 /// <summary>
 /// Configuración de las reglas de validación <c>ValidatorRule</c>.
-/// Contiene las reglas de validación .
+/// Contiene las reglas de validación de una cadena.
 /// </summary>
 /// <remarks>
-/// <para>En esta clase se pueden agregar todas las reglas de validaciones necesarias.</para>
+/// <para>Cada cadena que empieza en <see cref="Validator"/> tiene sus propios errores: dos cadenas,
+/// aunque se ejecuten a la vez en hilos distintos, no comparten nada.</para>
 /// </remarks>
 public class ValidatorRule
 {
-    private static readonly List<Func<string>> _rules = [];
+    [ThreadStatic]
+    private static ValidatorRule? _current;
+
+    private readonly List<string> _errors = [];
 
     private bool _stopFirstError;
 
     /// <summary>
-    /// Obtiene un valor que indica si ya hubo algun error.
+    /// Obtiene un valor que indica si la cadena no tiene ningún error.
     /// </summary>
     /// <returns>Un booleano.</returns>
-    public bool IsValid => _rules.Count == 0;
+    public bool IsValid => _errors.Count == 0;
 
     /// <summary>
-    /// Agrega una nueva regla.
+    /// Agrega un error a la cadena que se está configurando si la condición es verdadera.
     /// </summary>
-    /// <param name="condition">Si la condicion es verdadera.</param>
+    /// <remarks>
+    /// <para>Sólo se puede llamar desde las opciones de una regla, dentro de <c>AddRule(valor, opciones)</c>.</para>
+    /// </remarks>
+    /// <param name="condition">Si la condicion es verdadera, se agrega el error.</param>
     /// <param name="message">Mensaje de validación.</param>
+    /// <exception cref="InvalidOperationException">Si se llama fuera de las opciones de una regla.</exception>
     public static void Add(Func<bool> condition, string message)
     {
-        if (condition())
-        {
-            _rules.Add(() => message);
-        }
+        var current = _current ?? throw new InvalidOperationException(
+            "ValidatorRule.Add sólo se puede usar dentro de las opciones de una regla (Validator.AddRule(valor, opciones)).");
+
+        current.AddError(condition, message);
     }
 
     /// <summary>
@@ -65,26 +72,41 @@ public class ValidatorRule
     }
 
     /// <summary>
-    /// Para agregar una nueva regla de validación.
+    /// Para agregar una nueva regla de validación a esta cadena.
     /// </summary>
     /// <param name="value">Valor a validar.</param>
     /// <param name="options">Validadores disponibles.</param>
-    /// <returns>ValidatorRule.</returns>
-#pragma warning disable CA1822 // Marcar miembros como static
+    /// <returns>Esta misma cadena.</returns>
     public ValidatorRule AddRule(object? value, Action<ValidatorRuleOptions> options)
-#pragma warning restore CA1822 // Marcar miembros como static
-    => Validator.AddRule(value, options);
+    {
+        var previous = _current;
+
+        _current = this;
+
+        try
+        {
+            options.ToConfigureOrDefault(new ValidatorRuleOptions(value));
+        }
+        finally
+        {
+            _current = previous;
+        }
+
+        return this;
+    }
 
     /// <summary>
-    /// Para agregar una nueva regla de validación.
+    /// Para agregar una nueva regla de validación a esta cadena.
     /// </summary>
     /// <param name="condition">Condición a validar.</param>
     /// <param name="message">Mensaje de error a mostrar.</param>
-    /// <returns>ValidatorRule.</returns>
-#pragma warning disable CA1822 // Marcar miembros como static
+    /// <returns>Esta misma cadena.</returns>
     public ValidatorRule AddRule(Func<bool> condition, string message)
-#pragma warning restore CA1822 // Marcar miembros como static
-    => Validator.AddRule(condition, message);
+    {
+        AddError(() => condition is not null && condition(), message.ToThrowIfNullOrEmpty());
+
+        return this;
+    }
 
     /// <summary>
     /// Lanza una excepción del tipo ValidationsException si es que hubo algún error.
@@ -95,31 +117,48 @@ public class ValidatorRule
     /// Lanza una excepción asincrona del tipo ValidationsException si es que hubo algún error.
     /// </summary>
     /// <returns>Task.</returns>
-    public async Task ThrowAsync() => await Task.Run(() => Throw()).ConfigureAwait(false);
+    public Task ThrowAsync() => ThrowAsync<ValidationsException>();
 
     /// <summary>
-    /// Lanza una excepción asincrona del tipo ApplicationException si es que hubo algún error.
+    /// Lanza una excepción asincrona del tipo <typeparamref name="TException"/> si es que hubo algún error.
     /// </summary>
+    /// <remarks>
+    /// <para>Se ejecuta en el mismo hilo; el error llega en la tarea devuelta, como antes.</para>
+    /// </remarks>
+    /// <typeparam name="TException">Tipo de la excepción.</typeparam>
     /// <returns>Task.</returns>
     public async Task ThrowAsync<TException>()
         where TException : Exception
-    => await Task.Run(() => Throw<TException>()).ConfigureAwait(false);
+    {
+        Throw<TException>();
+
+        await Task.CompletedTask.ConfigureAwait(false);
+    }
 
     /// <summary>
-    /// Lanza una excepción del tipo ValidationsException si es que hubo algún error.
+    /// Lanza una excepción del tipo <typeparamref name="TException"/> si es que hubo algún error.
     /// </summary>
+    /// <typeparam name="TException">Tipo de la excepción.</typeparam>
     public void Throw<TException>()
         where TException : Exception
     {
         if (!IsValid)
         {
             var errors = _stopFirstError
-                 ? new string[] { _rules.First().Invoke() }
-                 : _rules.Select(rule => rule.Invoke()).ToArray();
+                 ? new string[] { _errors[0] }
+                 : _errors.ToArray();
 
-            _rules.Clear();
+            _errors.Clear();
 
             Verify.ToThrowIf<TException>(errors.ToString(", "), () => true);
+        }
+    }
+
+    private void AddError(Func<bool> condition, string message)
+    {
+        if (condition())
+        {
+            _errors.Add(message);
         }
     }
 }
