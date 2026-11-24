@@ -176,6 +176,8 @@ public class ValidatorTests
         Assert.ThrowsExactly<InvalidOperationException>(() => For(v => v.For(x => x.Age).IsInEnum()));
         Assert.ThrowsExactly<InvalidOperationException>(() => For(v => v.For(x => x.Address).GreaterThan(new Address())));
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => For(v => v.For(x => x.Name).MaxLength(-1)));
+        Assert.ThrowsExactly<InvalidOperationException>(() => For(v => v.For(x => x.Age).MinLength(1)));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => For(v => v.For(x => x.Name).MinLength(-1)));
         Assert.ThrowsExactly<ArgumentException>(() => For(v => v.For(x => x.Method())));
     }
 
@@ -653,6 +655,11 @@ public class ValidatorTests
         Assert.AreEqual("address.number", errors[0].Field);
         Assert.AreEqual(ValidationErrorCodes.Required, errors[0].Code);
         Assert.AreEqual(0, calls);
+
+        var custom = For(v => v.For(x => x.Address!.Number).Required().WithMessage("Falta el número.").GreaterThan(0).ContinueOnError());
+        var only = await Errors(custom, new Order());
+        Assert.AreEqual(1, only.Count);
+        Assert.AreEqual("Falta el número.", only[0].Message);
 
         await Single(validator, new Order { Address = new Address { Number = 0 } }, "address.number", ValidationErrorCodes.GreaterThan);
         Assert.AreEqual(1, calls);
