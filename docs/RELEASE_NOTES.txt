@@ -1,4 +1,4 @@
-﻿# v.2.3.0
+# v.2.3.0
 Versión menor: añade la API nueva de validación y marca como obsoleta la antigua, que sigue funcionando igual. La 3.0.0 sólo quitará lo obsoleto.
 
 API nueva (Kitpymes.Core.Validations y Kitpymes.Core.Validations.Abstractions):

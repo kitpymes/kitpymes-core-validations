@@ -31,6 +31,25 @@ jobs:
       - name: Restaurar
         run: dotnet restore Solution.sln
 
+      # La publicación exige que las notas empiecen exactamente por "# v.<versión>" (sin BOM). Se comprueba en
+      # cada rama, no sólo al publicar: la 2.3.0 se fusionó con un BOM en las notas y master no publicó. Para
+      # demostrar que la comprobación sirve, también se pasa a una copia con BOM, que tiene que fallar.
+      - name: Comprobar las notas de la versión
+        run: |
+          version=$(dotnet msbuild Kitpymes.Core.Validations/Kitpymes.Core.Validations.csproj -getProperty:Version -p:Configuration=Release)
+          comprobar() { [ "$(head -n 1 "$1" | tr -d '\r')" = "# v.$version" ]; }
+          if ! comprobar docs/RELEASE_NOTES.txt; then
+            echo "::error::docs/RELEASE_NOTES.txt tiene que empezar por '# v.$version' (sin BOM). Empieza por: $(head -n 1 docs/RELEASE_NOTES.txt | od -c | head -n 2)"
+            exit 1
+          fi
+          printf '\xef\xbb\xbf' > /tmp/notas-con-bom.txt
+          cat docs/RELEASE_NOTES.txt >> /tmp/notas-con-bom.txt
+          if comprobar /tmp/notas-con-bom.txt; then
+            echo "::error::La comprobación de las notas no detecta un BOM."
+            exit 1
+          fi
+          echo "Notas de la $version correctas; la copia con BOM se rechaza."
+
       # El analizador de hilos no se ejecutaba (Update en vez de Include) y nadie lo vio: se comprueba en
       # cada proyecto que no es de tests que el paquete está referenciado y que VSTHRD110 es un error.
       # Que se ejecuta lo prueba el paso siguiente.
