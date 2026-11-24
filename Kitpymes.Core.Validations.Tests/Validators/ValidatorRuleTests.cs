@@ -332,4 +332,25 @@ public class ValidatorRuleTests
 
         Assert.AreEqual(A, Assert.ThrowsExactly<ValidationsException>(() => exterior.Throw()).Message);
     }
+
+    [TestMethod]
+    public void Add_público_dentro_de_las_opciones_escribe_en_esa_cadena()
+    {
+        var rule = Validator.AddRule(null, _ => ValidatorRule.Add(() => true, A));
+        var otra = Validator.AddRule(null, _ => ValidatorRule.Add(() => false, B));
+
+        Assert.IsTrue(otra.IsValid);
+        Assert.AreEqual(A, Assert.ThrowsExactly<ValidationsException>(() => rule.Throw()).Message);
+    }
+
+    [TestMethod]
+    public void StopFirstError_al_final_de_la_cadena_deja_sólo_el_primer_error()
+    {
+        var rule = Validator
+            .AddRule(() => true, A)
+            .AddRule(() => true, B)
+            .StopFirstError();
+
+        Assert.AreEqual(A, Assert.ThrowsExactly<ValidationsException>(() => rule.Throw()).Message);
+    }
 }
