@@ -234,6 +234,19 @@ public class PipelineTests
     }
 
     [TestMethod]
+    public async Task StartupCheck_Goes_On_If_A_Behavior_Cannot_Be_Created()
+    {
+        var services = Services();
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(BrokenBehavior<,>));
+
+        var result = await Check(services, typeof(CreateOrder), typeof(WithoutValidator));
+
+        Assert.IsTrue(result.IsFailure);
+        StringAssert.Contains(result.Error.Message, typeof(CreateOrder).FullName + ": no se pudieron crear sus comportamientos: roto");
+        StringAssert.Contains(result.Error.Message, typeof(WithoutValidator).FullName + " no tiene validador");
+    }
+
+    [TestMethod]
     public async Task StartupCheck_And_Behavior_Reject_Null_Arguments()
     {
         using var provider = Services().BuildServiceProvider();

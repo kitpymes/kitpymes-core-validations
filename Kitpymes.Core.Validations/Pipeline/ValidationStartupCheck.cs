@@ -77,7 +77,19 @@ internal sealed class ValidationStartupCheck : IValidationStartupCheck
 
             var resultType = ResultType(type);
 
-            if (resultType is not null && !HasBehavior(services, type, resultType))
+            bool registered;
+
+            try
+            {
+                registered = resultType is null || HasBehavior(services, type, resultType);
+            }
+            catch (Exception e)
+            {
+                problems.Add($"{type.FullName}: no se pudieron crear sus comportamientos: {e.Message}");
+                continue;
+            }
+
+            if (!registered)
             {
                 problems.Add($"El comportamiento de validación no está registrado para {type.FullName}: use services.LoadValidations(o => o.WithAssemblies(...)).");
             }

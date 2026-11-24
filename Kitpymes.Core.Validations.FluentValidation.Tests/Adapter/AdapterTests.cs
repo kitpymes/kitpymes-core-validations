@@ -22,6 +22,12 @@ public sealed class Street
     public string? Name { get; set; }
 }
 
+public struct Spot
+{
+    [System.Text.Json.Serialization.JsonPropertyName("equis")]
+    public int X { get; set; }
+}
+
 public sealed class Item
 {
     public string? Code { get; set; }
@@ -77,6 +83,10 @@ public sealed class Sample
     public List<Street> Streets { get; set; } = new ();
 
     public Dictionary<string, Street> ByKey { get; set; } = new ();
+
+    public IReadOnlyDictionary<string, Street> ReadOnly { get; set; } = new Dictionary<string, Street>();
+
+    public Spot? Spot { get; set; }
 
     public string? Text { get; set; }
 
@@ -234,6 +244,8 @@ public class AdapterTests
         Assert.AreEqual("streets.0.nombre_calle", (await One(v => v.RuleForEach(x => x.Streets).ChildRules(s => s.RuleFor(x => x.Label).NotNull()), sample)).Field);
 
         Assert.AreEqual("byKey.casa.nombre_calle", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("ByKey[casa].Label"), new Sample { Text = null })).Field);
+        Assert.AreEqual("readOnly.casa.nombre_calle", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("ReadOnly[casa].Label"), new Sample())).Field);
+        Assert.AreEqual("spot.equis", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("Spot.X"), new Sample())).Field);
         Assert.AreEqual("desconocido.label", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("Desconocido.Label"), new Sample())).Field);
     }
 
