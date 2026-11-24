@@ -39,7 +39,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsNameWithMessage(string message)
     {
-        ValidatorRule.Add(() => _value is not string || !_value.ToString().ToIsName(), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value is not string || !_value.ToString().ToIsName(), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

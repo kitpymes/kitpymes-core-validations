@@ -43,7 +43,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsInsideRangeWithMessage(long min, long max, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsInsideRange(min, max), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value.ToIsInsideRange(min, max), message.ToThrowIfNullOrEmpty());
 
         return this;
     }
@@ -67,7 +67,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsInsideOrEqualRangeWithMessage(long min, long max, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsInsideOrEqualRange(min, max), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value.ToIsInsideOrEqualRange(min, max), message.ToThrowIfNullOrEmpty());
 
         return this;
     }
@@ -91,7 +91,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsOutRangeWithMessage(long min, long max, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsOutRange(min, max), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value.ToIsOutRange(min, max), message.ToThrowIfNullOrEmpty());
 
         return this;
     }
@@ -115,7 +115,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsOutOrEqualRangeWithMessage(long min, long max, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsOutOrEqualRange(min, max), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value.ToIsOutOrEqualRange(min, max), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

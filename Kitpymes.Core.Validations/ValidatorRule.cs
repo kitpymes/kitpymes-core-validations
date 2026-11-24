@@ -1,4 +1,4 @@
-﻿﻿// -----------------------------------------------------------------------
+﻿// -----------------------------------------------------------------------
 // <copyright file="ValidatorRule.cs" company="Kitpymes">
 // Copyright (c) Kitpymes. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project docs folder for full license information.
@@ -40,13 +40,24 @@ public class ValidatorRule
     /// Obtiene un valor que indica si la cadena no tiene ningún error.
     /// </summary>
     /// <returns>Un booleano.</returns>
-    public bool IsValid => _errors.Count == 0;
+    public bool IsValid
+    {
+        get
+        {
+            lock (_errors)
+            {
+                return _errors.Count == 0;
+            }
+        }
+    }
 
     /// <summary>
     /// Agrega un error a la cadena que se está configurando si la condición es verdadera.
     /// </summary>
     /// <remarks>
-    /// <para>Sólo se puede llamar desde las opciones de una regla, dentro de <c>AddRule(valor, opciones)</c>.</para>
+    /// <para>Sólo se puede llamar desde las opciones de una regla, dentro de <c>AddRule(valor, opciones)</c>, y en el
+    /// mismo hilo y antes de que terminen. Las reglas de <see cref="ValidatorRuleOptions"/> no pasan por aquí: escriben
+    /// directamente en su cadena.</para>
     /// </remarks>
     /// <param name="condition">Si la condicion es verdadera, se agrega el error.</param>
     /// <param name="message">Mensaje de validación.</param>
@@ -60,7 +71,8 @@ public class ValidatorRule
     }
 
     /// <summary>
-    /// Si quiere que pare de validar cuando encuentre el primer error.
+    /// Si quiere que pare de validar cuando encuentre el primer error: las reglas que se añadan después del
+    /// primer error no se evalúan.
     /// </summary>
     /// <param name="stopFirstError">Párametro de seteo.</param>
     /// <returns>ValidatorRule.</returns>
@@ -85,7 +97,7 @@ public class ValidatorRule
 
         try
         {
-            options.ToConfigureOrDefault(new ValidatorRuleOptions(value));
+            options.ToConfigureOrDefault(new ValidatorRuleOptions(value, this));
         }
         finally
         {
@@ -142,23 +154,47 @@ public class ValidatorRule
     public void Throw<TException>()
         where TException : Exception
     {
-        if (!IsValid)
+        string[] errors;
+
+        lock (_errors)
         {
-            var errors = _stopFirstError
+            if (_errors.Count == 0)
+            {
+                return;
+            }
+
+            errors = _stopFirstError
                  ? new string[] { _errors[0] }
                  : _errors.ToArray();
 
             _errors.Clear();
-
-            Verify.ToThrowIf<TException>(errors.ToString(", "), () => true);
         }
+
+        Verify.ToThrowIf<TException>(errors.ToString(", "), () => true);
     }
 
-    private void AddError(Func<bool> condition, string message)
+    /// <summary>
+    /// Agrega el error si la condición es verdadera. Con <see cref="StopFirstError(bool)"/> y un error ya
+    /// guardado, no evalúa la condición.
+    /// </summary>
+    /// <param name="condition">Si la condicion es verdadera, se agrega el error.</param>
+    /// <param name="message">Mensaje de validación.</param>
+    internal void AddError(Func<bool> condition, string message)
     {
+        lock (_errors)
+        {
+            if (_stopFirstError && _errors.Count > 0)
+            {
+                return;
+            }
+        }
+
         if (condition())
         {
-            _errors.Add(message);
+            lock (_errors)
+            {
+                _errors.Add(message);
+            }
         }
     }
 }

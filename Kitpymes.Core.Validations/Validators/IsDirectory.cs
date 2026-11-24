@@ -39,7 +39,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsDirectoryWithMessage(string message)
     {
-        ValidatorRule.Add(() => _value is not string || !_value.ToString().ToIsDirectory(), message);
+        AddError(() => _value is not string || !_value.ToString().ToIsDirectory(), message);
 
         return this;
     }

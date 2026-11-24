@@ -39,7 +39,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsEmailWithMessage(string message)
     {
-        ValidatorRule.Add(() => _value is not string || !_value.ToString().ToIsEmail(), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value is not string || !_value.ToString().ToIsEmail(), message.ToThrowIfNullOrEmpty());
 
         return this;
     }
