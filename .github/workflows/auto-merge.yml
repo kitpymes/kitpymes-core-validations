@@ -1,0 +1,120 @@
+name: auto-merge
+
+# Fusiona solo el PR de una rama cuando su ci termina en verde (todos los jobs, también la mutación),
+# con "Rebase and merge". Así la fusión no depende de que alguien esté delante.
+#
+# No fusiona:
+# - un PR que no abrió auto-pr.yml (autor github-actions[bot]);
+# - un PR cuya rama no es de este repo (un fork): workflow_run ve los secretos aunque el código venga de
+#   fuera, y el repo es público. Además el job sólo corre si la ejecución de ci es de un push a este repo;
+# - un PR cuya cabeza ya no es el commit que pasó la ci (llegó otro commit: decide su propia ci);
+# - un PR con la etiqueta espera-sebastian;
+# - un PR que sube la versión mayor (Pack.Build.props): esas las fusiona Sebastián. Deja un comentario.
+#
+# Fusiona con el secreto AUTOMERGE_TOKEN (token de Sebastián), no con github.token: un push hecho con
+# github.token no lanza otros workflows, y el push a master tiene que lanzar ci para publicar.
+# Si el token falta, caduca o no tiene permisos, el job falla en rojo y deja un comentario en el PR.
+#
+# workflow_run usa siempre la versión de este fichero que hay en master, no la de la rama.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write   # sólo para comentar en el PR con github.token
+  issues: write          # los comentarios de un PR van por la API de issues
+
+concurrency:
+  group: auto-merge-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  fusionar:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch != 'master' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      REPO: ${{ github.repository }}
+      RAMA: ${{ github.event.workflow_run.head_branch }}
+      SHA_CI: ${{ github.event.workflow_run.head_sha }}
+      RUN_CI: ${{ github.event.workflow_run.id }}
+      RESULTADO_CI: ${{ github.event.workflow_run.conclusion }}
+      ESTA_EJECUCION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Decidir si se fusiona
+        id: decidir
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          no() { echo "No se fusiona: $1"; echo "fusionar=false" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          pr=$(gh api "repos/$REPO/pulls?state=open&head=${REPO%%/*}:$RAMA" --jq '.[0] // empty')
+          [ -n "$pr" ] || no "la rama $RAMA no tiene un PR abierto."
+          numero=$(jq -r '.number' <<< "$pr")
+          echo "numero=$numero" >> "$GITHUB_OUTPUT"
+
+          [ "$(jq -r '.head.repo.full_name' <<< "$pr")" = "$REPO" ] || no "la rama del PR #$numero no es de este repo."
+          [ "$(jq -r '.user.login' <<< "$pr")" = "github-actions[bot]" ] || no "el PR #$numero no lo abrió auto-pr.yml."
+          [ "$RESULTADO_CI" = "success" ] || no "la ci del PR #$numero terminó en '$RESULTADO_CI'."
+          [ "$(jq -r '.head.sha' <<< "$pr")" = "$SHA_CI" ] || no "el PR #$numero tiene commits más nuevos que el que pasó la ci."
+          jq -e '.labels | map(.name) | index("espera-sebastian")' <<< "$pr" > /dev/null && no "el PR #$numero tiene la etiqueta espera-sebastian."
+
+          # Todos los jobs de la ci en verde u omitidos, y build-test y mutation en verde de verdad.
+          jobs=$(gh api "repos/$REPO/actions/runs/$RUN_CI/jobs?per_page=100")
+          malos=$(jq -r '[.jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name] | join(", ")' <<< "$jobs")
+          [ -z "$malos" ] || no "jobs de la ci sin verde: $malos."
+          for j in build-test mutation; do
+            [ "$(jq -r --arg j "$j" '[.jobs[] | select(.name == $j and .conclusion == "success")] | length' <<< "$jobs")" = "1" ] \
+              || no "el job $j no está en verde."
+          done
+
+          # Versión mayor: la fusiona Sebastián.
+          version() { grep -oP '(?<=<Version>)[^<]+' <<< "$1" | head -n 1; }
+          antes=$(version "$(git show origin/master:docs/props/Pack.Build.props)")
+          git fetch -q origin "$SHA_CI"
+          despues=$(version "$(git show "$SHA_CI:docs/props/Pack.Build.props")")
+          if [ "${despues%%.*}" != "${antes%%.*}" ]; then
+            marca="<!-- auto-merge:version-mayor -->"
+            if ! gh api "repos/$REPO/issues/$numero/comments" --jq '.[].body' | grep -qF "$marca"; then
+              gh pr comment "$numero" --repo "$REPO" --body "$marca
+          Este PR cambia la versión mayor ($antes → $despues): no se fusiona solo. Lo fusiona Sebastián."
+            fi
+            no "el PR #$numero cambia la versión mayor ($antes → $despues)."
+          fi
+
+          echo "Se fusiona el PR #$numero ($SHA_CI, versión $antes → $despues)."
+          echo "fusionar=true" >> "$GITHUB_OUTPUT"
+
+      - name: Fusionar
+        if: steps.decidir.outputs.fusionar == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+          NUMERO: ${{ steps.decidir.outputs.numero }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Falta el secreto AUTOMERGE_TOKEN en este repo."
+            exit 1
+          fi
+          # Si el token caducó o no tiene permisos, la API responde con error y el paso falla.
+          gh api -X PUT "repos/$REPO/pulls/$NUMERO/merge" \
+            -f merge_method=rebase -f sha="$SHA_CI" --jq '.message'
+
+      - name: Avisar en el PR si no se pudo fusionar
+        if: failure() && steps.decidir.outputs.numero != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMERO: ${{ steps.decidir.outputs.numero }}
+        run: |
+          gh pr comment "$NUMERO" --repo "$REPO" --body "La fusión automática ha fallado: $ESTA_EJECUCION
+          Si dice que falta o no vale AUTOMERGE_TOKEN, el token ha caducado o no tiene permisos: hay que crear uno nuevo y guardarlo en el secreto. Mientras, este PR se fusiona a mano."
