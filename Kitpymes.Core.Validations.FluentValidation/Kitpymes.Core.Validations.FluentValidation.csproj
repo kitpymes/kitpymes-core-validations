@@ -3,12 +3,6 @@
   <Import Project="$(KitpymesRoot)docs/props/Common.Build.props" Condition="Exists('$(KitpymesRoot)docs/props/Common.Build.props')" />
   <Import Project="$(KitpymesRoot)docs/props/Pack.Build.props" Condition="Exists('$(KitpymesRoot)docs/props/Pack.Build.props')" />
 
-  <!-- Common.Build.props mete ASP.NET Core en todos los proyectos y un FrameworkReference pasa a quien
-       consume el paquete. Desde la 3.0.0 Validations no usa ASP.NET Core: se quita. -->
-  <ItemGroup>
-    <FrameworkReference Remove="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="11.11.0" />
 
