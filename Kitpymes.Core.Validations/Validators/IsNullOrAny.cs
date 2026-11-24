@@ -40,7 +40,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsNullOrAnyWithMessage(string message)
     {
-        ValidatorRule.Add(() => _value is not IEnumerable || (_value as IEnumerable).ToIsNullOrAny(), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value is not IEnumerable || (_value as IEnumerable).ToIsNullOrAny(), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

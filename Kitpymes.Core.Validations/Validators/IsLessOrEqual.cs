@@ -41,7 +41,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsLessOrEqualWithMessage(long min, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsLessOrEqual(min), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value.ToIsLessOrEqual(min), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

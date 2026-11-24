@@ -39,7 +39,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsFileWithMessage(string message)
     {
-        ValidatorRule.Add(() => _value is not string || !_value.ToString().ToIsFile(), message);
+        AddError(() => _value is not string || !_value.ToString().ToIsFile(), message);
 
         return this;
     }

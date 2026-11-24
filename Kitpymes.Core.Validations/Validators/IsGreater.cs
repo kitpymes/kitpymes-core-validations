@@ -41,7 +41,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsGreaterWithMessage(long min, string message)
     {
-        ValidatorRule.Add(() => !_value.ToIsNullOrEmpty() && _value.ToIsGreater(min), message);
+        AddError(() => !_value.ToIsNullOrEmpty() && _value.ToIsGreater(min), message);
 
         return this;
     }

@@ -42,7 +42,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsEqualWithMessage(object? valueCompare, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsEqual(valueCompare), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value.ToIsEqual(valueCompare), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

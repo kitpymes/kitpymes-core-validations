@@ -41,7 +41,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsGreaterOrEqualWithMessage(long max, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsGreaterOrEqual(max), message);
+        AddError(() => _value.ToIsGreaterOrEqual(max), message);
 
         return this;
     }

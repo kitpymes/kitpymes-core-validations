@@ -7,6 +7,8 @@
 
 namespace Kitpymes.Core.Validations;
 
+using System;
+
 using Kitpymes.Core.Shared.Extensions;
 
 /*
@@ -25,6 +27,8 @@ public partial class ValidatorRuleOptions
 {
     private readonly object? _value;
 
+    private readonly ValidatorRule? _rule;
+
     /// <summary>
     /// Inicializa una nueva instancia de la clase <see cref="ValidatorRuleOptions"/>.
     /// </summary>
@@ -35,4 +39,27 @@ public partial class ValidatorRuleOptions
     /// </summary>
     /// <param name="value">El valor a validar.</param>
     public ValidatorRuleOptions(object? value) => _value = value;
+
+    /// <summary>
+    /// Inicializa una nueva instancia de la clase <see cref="ValidatorRuleOptions"/> que escribe en una cadena.
+    /// </summary>
+    /// <param name="value">El valor a validar.</param>
+    /// <param name="rule">La cadena que recibe los errores.</param>
+    internal ValidatorRuleOptions(object? value, ValidatorRule rule)
+    {
+        _value = value;
+        _rule = rule;
+    }
+
+    private void AddError(Func<bool> condition, string message)
+    {
+        if (_rule is null)
+        {
+            ValidatorRule.Add(condition, message);
+        }
+        else
+        {
+            _rule.AddError(condition, message);
+        }
+    }
 }

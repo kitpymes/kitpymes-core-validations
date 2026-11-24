@@ -41,7 +41,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsRegexWithMessage(string regex, string message)
     {
-        ValidatorRule.Add(() => _value is not string || !_value.ToString().ToIsRegexMatch(regex), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value is not string || !_value.ToString().ToIsRegexMatch(regex), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

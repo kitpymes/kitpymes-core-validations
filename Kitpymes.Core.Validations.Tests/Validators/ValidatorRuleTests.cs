@@ -121,8 +121,8 @@ public class ValidatorRuleTests
         var rule = Validator
             .AddRule(() => true, A)
             .StopFirstError()
-            .AddRule(() => true, B)
-            .StopFirstError(false);
+            .StopFirstError(false)
+            .AddRule(() => true, B);
 
         var exception = Assert.ThrowsExactly<ValidationsException>(() => rule.Throw());
         Assert.AreEqual($"{A}, {B}", exception.Message);
@@ -245,5 +245,91 @@ public class ValidatorRuleTests
         Assert.IsInstanceOfType<InvalidOperationException>(enOtroHilo);
         var exception = Assert.ThrowsExactly<ValidationsException>(() => rule.Throw());
         Assert.AreEqual(A, exception.Message);
+    }
+
+    [TestMethod]
+    public async Task Opciones_async_no_tumban_el_proceso_y_el_error_llega_a_su_cadena()
+    {
+        using var hecho = new SemaphoreSlim(0);
+
+        var rule = Validator.AddRule(null, async x =>
+        {
+            await Task.Yield();
+            x.IsNullOrEmptyWithMessage(A);
+            hecho.Release();
+        });
+
+        Assert.IsTrue(await hecho.WaitAsync(TimeSpan.FromSeconds(10)));
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => rule.Throw());
+        Assert.AreEqual(A, exception.Message);
+    }
+
+    [TestMethod]
+    public void Reglas_en_paralelo_dentro_de_las_opciones_llegan_todas_a_su_cadena()
+    {
+        var rule = Validator.AddRule(null, x => Parallel.For(0, 500, _ => x.IsNullOrEmptyWithMessage(A)));
+
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => rule.Throw());
+        Assert.AreEqual(500, exception.Message.Split(", ").Length);
+    }
+
+    [TestMethod]
+    public void Con_StopFirstError_las_reglas_posteriores_al_primer_error_no_se_evalúan()
+    {
+        var evaluada = false;
+
+        var rule = Validator
+            .AddRule(() => true, A)
+            .StopFirstError()
+            .AddRule(
+                () =>
+                {
+                    evaluada = true;
+                    return true;
+                },
+                B);
+
+        Assert.IsFalse(evaluada);
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => rule.Throw());
+        Assert.AreEqual(A, exception.Message);
+    }
+
+    [TestMethod]
+    public void Con_StopFirstError_sin_errores_previos_sí_se_evalúa()
+    {
+        var rule = Validator
+            .AddRule(() => false, A)
+            .StopFirstError()
+            .AddRule(() => true, B);
+
+        var exception = Assert.ThrowsExactly<ValidationsException>(() => rule.Throw());
+        Assert.AreEqual(B, exception.Message);
+    }
+
+    [TestMethod]
+    public void Las_opciones_de_una_cadena_pueden_añadir_a_otra_cadena_existente()
+    {
+        var otra = Validator.AddRule(() => false, B);
+
+        var una = Validator.AddRule(null, x =>
+        {
+            otra.AddRule(null, y => y.IsNullOrEmptyWithMessage(B));
+            x.IsNullOrEmptyWithMessage(A);
+        });
+
+        Assert.AreEqual(A, Assert.ThrowsExactly<ValidationsException>(() => una.Throw()).Message);
+        Assert.AreEqual(B, Assert.ThrowsExactly<ValidationsException>(() => otra.Throw()).Message);
+    }
+
+    [TestMethod]
+    public void Una_cadena_interior_que_lanza_no_rompe_la_exterior()
+    {
+        var exterior = Validator.AddRule(null, x =>
+        {
+            _ = Assert.ThrowsExactly<NotSupportedException>(() => Validator.AddRule(null, _ => throw new NotSupportedException()));
+            x.IsNullOrEmptyWithMessage(A);
+        });
+
+        Assert.AreEqual(A, Assert.ThrowsExactly<ValidationsException>(() => exterior.Throw()).Message);
     }
 }

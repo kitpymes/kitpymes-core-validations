@@ -39,7 +39,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsNullOrEmptyWithMessage(string message)
     {
-        ValidatorRule.Add(_value.ToIsNullOrEmpty, message.ToThrowIfNullOrEmpty());
+        AddError(_value.ToIsNullOrEmpty, message.ToThrowIfNullOrEmpty());
 
         return this;
     }

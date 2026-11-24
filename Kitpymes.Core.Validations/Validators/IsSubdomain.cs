@@ -39,7 +39,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsSubdomainWithMessage(string message)
     {
-        ValidatorRule.Add(() => _value is not string || !_value.ToString().ToIsSubdomain(), message.ToThrowIfNullOrEmpty());
+        AddError(() => _value is not string || !_value.ToString().ToIsSubdomain(), message.ToThrowIfNullOrEmpty());
 
         return this;
     }

@@ -41,7 +41,7 @@ public partial class ValidatorRuleOptions
     /// <returns>ValidatorRuleOptions.</returns>
     public ValidatorRuleOptions IsLessWithMessage(long min, string message)
     {
-        ValidatorRule.Add(() => _value.ToIsLess(min), message);
+        AddError(() => _value.ToIsLess(min), message);
 
         return this;
     }
