@@ -8,4 +8,12 @@
   <PropertyGroup>
     <KitpymesRoot>$(MSBuildThisFileDirectory)</KitpymesRoot>
   </PropertyGroup>
+
+  <!--
+    Los tests y las APIs de prueba siguen probando la API antigua, marcada como obsoleta en la 2.3.0
+    (KPY0005 a KPY0008). Se quita en la 3.0.0, junto con esa API.
+  -->
+  <PropertyGroup Condition=" $(MSBuildProjectName.Contains('Tests')) ">
+    <NoWarn>$(NoWarn);KPY0005;KPY0006;KPY0007;KPY0008</NoWarn>
+  </PropertyGroup>
 </Project>

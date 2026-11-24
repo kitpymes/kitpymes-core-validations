@@ -7,6 +7,11 @@
 
 namespace Kitpymes.Core.Validations.Settings;
 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Reflection;
+
 /*
     Configuración de las validaciones ValidationsOptions
     Contiene las opciones de las validaciones
@@ -21,19 +26,62 @@ namespace Kitpymes.Core.Validations.Settings;
 /// </remarks>
 public class ValidationsOptions
 {
+    private readonly List<Assembly> _assemblies = new ();
+
     /// <summary>
     /// Obtiene la configuración de las validaciones.
     /// </summary>
+    [Obsolete("Configuración de la API antigua. Use WithAssemblies con validadores Validator<T>. Se elimina en 3.0.0.", DiagnosticId = "KPY0007")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public ValidationsSettings ValidationsSettings { get; private set; } = new ValidationsSettings();
+
+    /// <summary>
+    /// Obtiene los ensamblados de los validadores, sin repetir y en el orden en que se indicaron.
+    /// </summary>
+    internal IReadOnlyList<Assembly> Assemblies => _assemblies;
 
     /// <summary>
     /// Si se habilita el servicio de validaciones.
     /// </summary>
     /// <param name="enabled">Si se habilita o no.</param>
     /// <returns>La clase ValidationsOptions.</returns>
+    [Obsolete("Activa la API antigua. Use WithAssemblies con validadores Validator<T>. Se elimina en 3.0.0.", DiagnosticId = "KPY0007")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public ValidationsOptions WithEnabled(bool enabled = true)
     {
         ValidationsSettings.Enabled = enabled;
+
+        return this;
+    }
+
+    /// <summary>
+    /// Registra los validadores (<see cref="Abstractions.IValidator{T}"/>) de los ensamblados, el paso de validación
+    /// del mediador y su comprobación de arranque.
+    /// </summary>
+    /// <param name="assemblies">Ensamblados donde están los validadores.</param>
+    /// <returns>La clase ValidationsOptions.</returns>
+    /// <exception cref="ArgumentException">Si no se indica ningún ensamblado o alguno es nulo.</exception>
+    public ValidationsOptions WithAssemblies(params Assembly[] assemblies)
+    {
+        ArgumentNullException.ThrowIfNull(assemblies);
+
+        if (assemblies.Length == 0)
+        {
+            throw new ArgumentException("Indique al menos un ensamblado con validadores.", nameof(assemblies));
+        }
+
+        foreach (var assembly in assemblies)
+        {
+            if (assembly is null)
+            {
+                throw new ArgumentException("La lista de ensamblados no puede contener nulos.", nameof(assemblies));
+            }
+
+            if (!_assemblies.Contains(assembly))
+            {
+                _assemblies.Add(assembly);
+            }
+        }
 
         return this;
     }

@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
+
+    <PackageReference Include="Kitpymes.Core.Results" Version="1.2.1" />
   </ItemGroup>
 
   <ItemGroup>

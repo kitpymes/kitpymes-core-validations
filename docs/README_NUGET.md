@@ -31,6 +31,23 @@ _CLI dotnet_
 dotnet add package Kitpymes.Core.Validations
 ```
 
+## ⌨️ Uso
+
+```cs
+public sealed class CreateOrderValidator : Validator<CreateOrder>
+{
+    public CreateOrderValidator()
+    {
+        RuleFor(x => x.Customer).Required().MaxLength(100);
+        RuleForEach(x => x.Lines).SetValidator(new LineValidator());
+    }
+}
+
+services.LoadValidations(o => o.WithAssemblies(typeof(CreateOrderValidator).Assembly));
+```
+
+`ValidateAsync` devuelve un `Result` con un `FieldError` por campo (`lines.0.quantity`, `Validations.Mayor`). La API antigua (`Validator.AddRule`, `ValidationsException`, el middleware) está obsoleta desde la 2.3.0 y se elimina en la 3.0.0. Más detalle en el [README](https://github.com/kitpymes/kitpymes-core-validations/blob/master/docs/README.md).
+
 ## 🛠️ Construido con 
 
 * [NET Core](https://dotnet.microsoft.com/download) - Framework de trabajo
