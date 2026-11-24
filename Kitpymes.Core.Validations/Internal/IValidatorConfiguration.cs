@@ -15,5 +15,9 @@ using System.Collections.Generic;
 /// </summary>
 internal interface IValidatorConfiguration
 {
+    /// <summary>
+    /// Problemas de configuración del validador.
+    /// </summary>
+    /// <returns>Los problemas, sin repetir; vacío si está bien configurado.</returns>
     IReadOnlyList<string> Problems();
 }
