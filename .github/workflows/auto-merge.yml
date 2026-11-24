@@ -9,11 +9,17 @@ name: auto-merge
 #   fuera, y el repo es público. Además el job sólo corre si la ejecución de ci es de un push a este repo;
 # - un PR cuya cabeza ya no es el commit que pasó la ci (llegó otro commit: decide su propia ci);
 # - un PR con la etiqueta espera-sebastian;
-# - un PR que sube la versión mayor (Pack.Build.props): esas las fusiona Sebastián. Deja un comentario.
+# - un PR en borrador;
+# - un PR que cambia la versión mayor en Pack.Build.props respecto a su punto de partida en master: esas las
+#   fusiona Sebastián, y deja un comentario. Tampoco uno que toque <Version> o <VersionPrefix> en otro fichero.
+#
+# Si la ci termina antes de que auto-pr.yml abra el PR, no hay PR y no se fusiona: hay que relanzar la ci.
 #
 # Fusiona con el secreto AUTOMERGE_TOKEN (token de Sebastián), no con github.token: un push hecho con
 # github.token no lanza otros workflows, y el push a master tiene que lanzar ci para publicar.
-# Si el token falta, caduca o no tiene permisos, el job falla en rojo y deja un comentario en el PR.
+# Si el token falta, caduca o no tiene permisos, o GitHub rechaza la fusión (conflicto al hacer rebase,
+# una regla de la rama), el job falla en rojo y deja en el PR un comentario con la respuesta de GitHub.
+# Si la cabeza del PR cambió entre la decisión y la fusión (409), no es un fallo: decide la ci del commit nuevo.
 #
 # workflow_run usa siempre la versión de este fichero que hay en master, no la de la rama.
 on:
@@ -58,13 +64,14 @@ jobs:
           set -euo pipefail
           no() { echo "No se fusiona: $1"; echo "fusionar=false" >> "$GITHUB_OUTPUT"; exit 0; }
 
-          pr=$(gh api "repos/$REPO/pulls?state=open&head=${REPO%%/*}:$RAMA" --jq '.[0] // empty')
-          [ -n "$pr" ] || no "la rama $RAMA no tiene un PR abierto."
+          pr=$(gh api -X GET "repos/$REPO/pulls" -f state=open -f base=master -f head="${REPO%%/*}:$RAMA" --jq '.[0] // empty')
+          [ -n "$pr" ] || no "la rama $RAMA no tiene un PR abierto contra master."
           numero=$(jq -r '.number' <<< "$pr")
           echo "numero=$numero" >> "$GITHUB_OUTPUT"
 
           [ "$(jq -r '.head.repo.full_name' <<< "$pr")" = "$REPO" ] || no "la rama del PR #$numero no es de este repo."
           [ "$(jq -r '.user.login' <<< "$pr")" = "github-actions[bot]" ] || no "el PR #$numero no lo abrió auto-pr.yml."
+          [ "$(jq -r '.draft' <<< "$pr")" = "false" ] || no "el PR #$numero es un borrador."
           [ "$RESULTADO_CI" = "success" ] || no "la ci del PR #$numero terminó en '$RESULTADO_CI'."
           [ "$(jq -r '.head.sha' <<< "$pr")" = "$SHA_CI" ] || no "el PR #$numero tiene commits más nuevos que el que pasó la ci."
           jq -e '.labels | map(.name) | index("espera-sebastian")' <<< "$pr" > /dev/null && no "el PR #$numero tiene la etiqueta espera-sebastian."
@@ -78,14 +85,23 @@ jobs:
               || no "el job $j no está en verde."
           done
 
-          # Versión mayor: la fusiona Sebastián.
-          version() { grep -oP '(?<=<Version>)[^<]+' <<< "$1" | head -n 1; }
-          antes=$(version "$(git show origin/master:docs/props/Pack.Build.props)")
+          # Versión: se compara con el punto de partida de la rama en master, no con master de ahora
+          # (una rama anterior a una subida de mayor en master no la "baja"). La mayor la fusiona Sebastián.
           git fetch -q origin "$SHA_CI"
-          despues=$(version "$(git show "$SHA_CI:docs/props/Pack.Build.props")")
+          base=$(git merge-base origin/master "$SHA_CI")
+          props=docs/props/Pack.Build.props
+          otros=$(git diff --name-only "$base" "$SHA_CI" -- '*.props' '*.targets' '*.csproj' \
+            | grep -vxF "$props" \
+            | while read -r f; do
+                git diff "$base" "$SHA_CI" -- "$f" | grep -qE '^[+-].*<(Version|VersionPrefix)>' && echo "$f"
+              done || true)
+          [ -z "$otros" ] || no "el PR #$numero cambia <Version> fuera de $props: $(tr '\n' ' ' <<< "$otros")."
+          version() { grep -oP '(?<=<Version>)[^<]+' <<< "$1" | head -n 1; }
+          antes=$(version "$(git show "$base:$props")")
+          despues=$(version "$(git show "$SHA_CI:$props")")
           if [ "${despues%%.*}" != "${antes%%.*}" ]; then
             marca="<!-- auto-merge:version-mayor -->"
-            if ! gh api "repos/$REPO/issues/$numero/comments" --jq '.[].body' | grep -qF "$marca"; then
+            if ! gh api --paginate "repos/$REPO/issues/$numero/comments" --jq '.[].body' | grep -qF "$marca"; then
               gh pr comment "$numero" --repo "$REPO" --body "$marca
           Este PR cambia la versión mayor ($antes → $despues): no se fusiona solo. Lo fusiona Sebastián."
             fi
@@ -102,13 +118,32 @@ jobs:
           NUMERO: ${{ steps.decidir.outputs.numero }}
         run: |
           set -euo pipefail
+          respuesta="$RUNNER_TEMP/respuesta-fusion.txt"
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::Falta el secreto AUTOMERGE_TOKEN en este repo."
+            echo "Falta el secreto AUTOMERGE_TOKEN en este repo." | tee "$respuesta"
             exit 1
           fi
-          # Si el token caducó o no tiene permisos, la API responde con error y el paso falla.
-          gh api -X PUT "repos/$REPO/pulls/$NUMERO/merge" \
-            -f merge_method=rebase -f sha="$SHA_CI" --jq '.message'
+
+          # La etiqueta pudo ponerse mientras se decidía: se vuelve a mirar justo antes.
+          if ! etiquetas=$(gh api "repos/$REPO/pulls/$NUMERO" --jq '[.labels[].name] | join(",")' 2>"$respuesta"); then
+            cat "$respuesta"; exit 1
+          fi
+          if [[ ",$etiquetas," == *",espera-sebastian,"* ]]; then
+            echo "No se fusiona: el PR #$NUMERO tiene ahora la etiqueta espera-sebastian."
+            exit 0
+          fi
+
+          if gh api -X PUT "repos/$REPO/pulls/$NUMERO/merge" \
+               -f merge_method=rebase -f sha="$SHA_CI" --jq '.message' > "$respuesta" 2>&1; then
+            cat "$respuesta"
+            exit 0
+          fi
+          cat "$respuesta"
+          if grep -q 'HTTP 409' "$respuesta"; then
+            echo "No se fusiona: la cabeza del PR #$NUMERO cambió; decide la ci del commit nuevo."
+            exit 0
+          fi
+          exit 1
 
       - name: Avisar en el PR si no se pudo fusionar
         if: failure() && steps.decidir.outputs.numero != ''
@@ -116,5 +151,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NUMERO: ${{ steps.decidir.outputs.numero }}
         run: |
+          respuesta="$RUNNER_TEMP/respuesta-fusion.txt"
+          if [ -s "$respuesta" ]; then
+            detalle=$(head -c 1500 "$respuesta")
+          else
+            detalle="Falló el paso que decide si se fusiona, antes de intentar la fusión: ver la ejecución."
+          fi
+          case "$detalle" in
+            *"HTTP 401"*|*"Falta el secreto"*|*"Bad credentials"*) causa="El token falta, ha caducado o no vale: hay que crear uno nuevo y guardarlo en el secreto AUTOMERGE_TOKEN." ;;
+            *"HTTP 403"*|*"HTTP 404"*) causa="El token no tiene permisos sobre este repo (o una regla de la rama lo impide)." ;;
+            *"Falló el paso"*) causa="La decisión falló (una llamada a la API o a git): no es cosa del token." ;;
+            *) causa="GitHub ha rechazado la fusión (conflicto al hacer rebase, una regla de la rama u otro motivo): ver la respuesta." ;;
+          esac
           gh pr comment "$NUMERO" --repo "$REPO" --body "La fusión automática ha fallado: $ESTA_EJECUCION
-          Si dice que falta o no vale AUTOMERGE_TOKEN, el token ha caducado o no tiene permisos: hay que crear uno nuevo y guardarlo en el secreto. Mientras, este PR se fusiona a mano."
+
+          $causa Mientras, este PR se fusiona a mano.
+
+          Respuesta de GitHub:
+          \`\`\`
+          $detalle
+          \`\`\`"
