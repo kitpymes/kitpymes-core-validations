@@ -10,6 +10,7 @@ namespace Kitpymes.Core.Validations;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Kitpymes.Core.Validations.Internal;
@@ -23,11 +24,17 @@ using Kitpymes.Core.Validations.Internal;
 /// cambian la última regla añadida. Salvo <see cref="Required"/>, <see cref="Must(Func{TProperty, bool})"/>,
 /// <see cref="Custom"/>, <see cref="Equal"/> y <see cref="NotEqual"/>, las reglas no se evalúan si el valor es nulo:
 /// para eso está <see cref="Required"/>.</para>
+/// <para>Las comparaciones entre textos son por ordinal, sin depender de la cultura.</para>
 /// </remarks>
 /// <typeparam name="T">Tipo que se valida.</typeparam>
 /// <typeparam name="TProperty">Tipo del campo.</typeparam>
 public sealed class RuleBuilder<T, TProperty> : IRule<T>
 {
+    // Los textos se comparan por ordinal, para que el resultado no dependa de la cultura.
+    private static readonly IComparer<TProperty> Comparison = typeof(TProperty) == typeof(string)
+        ? (IComparer<TProperty>)(object)StringComparer.Ordinal
+        : Comparer<TProperty>.Default;
+
     private readonly MemberPath _path;
 
     private readonly bool _each;
@@ -51,9 +58,19 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
     /// <summary>
     /// El campo es obligatorio: no puede ser nulo, un texto vacío o en blanco, ni una colección vacía.
     /// </summary>
+    /// <remarks>
+    /// <para>El valor por defecto de un tipo valor (<c>0</c>, <see cref="Guid.Empty"/>, <c>false</c>) sí cuenta como
+    /// valor; para rechazarlo, <c>NotEqual(Guid.Empty)</c> o <c>GreaterThan(0)</c>. Es distinto de <c>NotEmpty</c> de
+    /// FluentValidation. Un campo de tipo valor detrás de un intermedio nulo (<c>x =&gt; x.Address.Number</c> con
+    /// <c>Address</c> nulo) cuenta como nulo: falla <see cref="Required"/> y el resto de reglas no se evalúa.</para>
+    /// </remarks>
     /// <returns>Este mismo constructor de reglas.</returns>
     public RuleBuilder<T, TProperty> Required()
-        => Add(ValidationErrorCodes.Required, skipNull: false, (v, _) => !IsEmpty(v), f => Messages.For(ValidationErrorCodes.Required, f));
+    {
+        Add(ValidationErrorCodes.Required, skipNull: false, (v, _) => !IsEmpty(v), f => Messages.For(ValidationErrorCodes.Required, f));
+        _checks[^1].IsRequired = true;
+        return this;
+    }
 
     /// <summary>
     /// El texto tiene como máximo <paramref name="max"/> caracteres.
@@ -139,13 +156,19 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
     /// <summary>
     /// El valor está entre <paramref name="min"/> y <paramref name="max"/>, los dos incluidos.
     /// </summary>
-    /// <param name="min">Mínimo.</param>
-    /// <param name="max">Máximo.</param>
+    /// <param name="min">Mínimo; no puede ser nulo.</param>
+    /// <param name="max">Máximo; no puede ser nulo.</param>
     /// <returns>Este mismo constructor de reglas.</returns>
     public RuleBuilder<T, TProperty> Between(TProperty min, TProperty max)
     {
         RequireComparable(nameof(Between));
-        var comparer = Comparer<TProperty>.Default;
+
+        if (min is null || max is null)
+        {
+            throw new ArgumentNullException(min is null ? nameof(min) : nameof(max), "Los límites de Between no pueden ser nulos.");
+        }
+
+        var comparer = Comparison;
 
         if (comparer.Compare(min, max) > 0)
         {
@@ -189,12 +212,12 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
         }
 
         var flags = type.GetCustomAttribute<FlagsAttribute>() is not null;
-        var mask = Enum.GetValues(type).Cast<object>().Aggregate(0UL, (all, value) => all | Convert.ToUInt64(value, System.Globalization.CultureInfo.InvariantCulture));
+        var mask = flags ? Enum.GetValues(type).Cast<object>().Aggregate(0UL, (all, value) => all | Bits(value)) : 0UL;
 
         return Add(
             ValidationErrorCodes.Enum,
             skipNull: true,
-            (v, _) => Enum.IsDefined(type, v!) || (flags && (Convert.ToUInt64(v, System.Globalization.CultureInfo.InvariantCulture) & ~mask) == 0),
+            (v, _) => Enum.IsDefined(type, v!) || (flags && (Bits(v!) & ~mask) == 0),
             f => Messages.For(ValidationErrorCodes.Enum, f));
     }
 
@@ -242,7 +265,8 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
     /// (un ciclo) no se vuelve a validar, y a más de 32 niveles se da <see cref="ValidationErrorCodes.Depth"/>.</para>
     /// </remarks>
     /// <typeparam name="TChild">Tipo del campo sin la marca de nulo (<c>Address</c> para un campo <c>Address?</c>).</typeparam>
-    /// <param name="validator">Validador del tipo del campo.</param>
+    /// <param name="validator">Validador del tipo del campo, normalmente creado ahí mismo (<c>new AddressValidator()</c>):
+    /// los validadores sólo se registran como <c>IValidator&lt;T&gt;</c>, no como su propia clase.</param>
     /// <returns>Este mismo constructor de reglas.</returns>
     /// <exception cref="InvalidOperationException">Si el validador es de un tipo derivado del campo y no del mismo tipo.</exception>
     public RuleBuilder<T, TProperty> SetValidator<TChild>(Validator<TChild> validator)
@@ -349,7 +373,7 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
 
         foreach (var item in items)
         {
-            Apply(instance, item, path + "." + index.ToString(System.Globalization.CultureInfo.InvariantCulture), context, element: true);
+            Apply(instance, item, path + "." + index.ToString(CultureInfo.InvariantCulture), context, element: true);
             index++;
         }
     }
@@ -362,15 +386,44 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
     {
         null => true,
         string text => string.IsNullOrWhiteSpace(text),
-        IEnumerable items => !items.GetEnumerator().MoveNext(),
+        IEnumerable items => !HasItems(items),
         _ => false,
     };
+
+    private static bool HasItems(IEnumerable items)
+    {
+        var enumerator = items.GetEnumerator();
+
+        try
+        {
+            return enumerator.MoveNext();
+        }
+        finally
+        {
+            (enumerator as IDisposable)?.Dispose();
+        }
+    }
+
+    // Enum con signo (Neg = -1) pasa a sus bits sin desbordar; sin signo, tal cual.
+    private static ulong Bits(object value)
+        => Convert.GetTypeCode(value) switch
+        {
+            TypeCode.SByte => unchecked((ulong)Convert.ToInt64(value, CultureInfo.InvariantCulture)),
+            TypeCode.Int16 => unchecked((ulong)Convert.ToInt64(value, CultureInfo.InvariantCulture)),
+            TypeCode.Int32 => unchecked((ulong)Convert.ToInt64(value, CultureInfo.InvariantCulture)),
+            TypeCode.Int64 => unchecked((ulong)Convert.ToInt64(value, CultureInfo.InvariantCulture)),
+            _ => Convert.ToUInt64(value, CultureInfo.InvariantCulture),
+        };
 
     private void Apply(T instance, object? raw, string path, ValidationContext context, bool element)
     {
         var isNull = raw is null;
         var value = isNull ? default! : (TProperty)raw!;
         var before = context.Errors.Count;
+
+        // Un campo de tipo valor sin valor (un intermedio nulo en x => x.Address.Number) cuenta como nulo:
+        // sólo se evalúa Required, que falla; el resto de reglas no recibe un 0 inventado.
+        var missing = isNull && value is not null;
 
         foreach (var check in _checks)
         {
@@ -379,7 +432,13 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
                 return;
             }
 
-            if (isNull && check.SkipNull)
+            if (missing && check.IsRequired)
+            {
+                context.Add(path, check.Code, check.Message ?? check.DefaultMessage(path));
+                continue;
+            }
+
+            if ((isNull && check.SkipNull) || missing)
             {
                 continue;
             }
@@ -401,7 +460,8 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
 
         if (isNull)
         {
-            if (element)
+            // Si el elemento ya tiene un error (su propio Required), no se repite.
+            if (element && context.Errors.Count == before)
             {
                 context.Add(path, ValidationErrorCodes.Required, Messages.For(ValidationErrorCodes.Required, path));
             }
@@ -421,7 +481,8 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
     private RuleBuilder<T, TProperty> Pattern(string rule, string code, string pattern)
     {
         RequireString(rule);
-        return Add(code, skipNull: true, (v, _) => ((string)(object)v!).Length == 0 || Patterns.IsMatch((string)(object)v!, pattern), f => Messages.For(code, f));
+        var regex = Patterns.Create(pattern);
+        return Add(code, skipNull: true, (v, _) => ((string)(object)v!).Length == 0 || regex.IsMatch((string)(object)v!), f => Messages.For(code, f));
     }
 
     private RuleBuilder<T, TProperty> Compare(string rule, string code, TProperty limit, Func<int, bool> valid)
@@ -433,7 +494,7 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
             throw new ArgumentNullException(nameof(limit), $"El límite de {rule} no puede ser nulo.");
         }
 
-        var comparer = Comparer<TProperty>.Default;
+        var comparer = Comparison;
         return Add(code, skipNull: true, (v, _) => valid(comparer.Compare(v, limit)), f => Messages.For(code, f, limit));
     }
 
@@ -484,5 +545,7 @@ public sealed class RuleBuilder<T, TProperty> : IRule<T>
         internal string? Message { get; set; }
 
         internal Action<TProperty, CustomRuleContext>? Custom { get; init; }
+
+        internal bool IsRequired { get; set; }
     }
 }

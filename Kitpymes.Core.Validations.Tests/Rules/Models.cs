@@ -29,8 +29,33 @@ public readonly struct Money : IComparable<Money>
     public override string ToString() => Amount.ToString(System.Globalization.CultureInfo.InvariantCulture) + " EUR";
 }
 
+public enum Sign
+{
+    Negative = -1,
+    Zero = 0,
+    Positive = 1,
+}
+
+[Flags]
+public enum SignFlags
+{
+    None = 0,
+    Low = 1,
+    High = 2,
+    Top = int.MinValue,
+}
+
+public struct Point
+{
+    public int X { get; set; }
+}
+
 public sealed class Address
 {
+    public int Number { get; set; }
+
+    public Guid Id { get; set; }
+
     public string? Street { get; set; }
 
     public Address? Next { get; set; }
@@ -75,6 +100,14 @@ public sealed class Order
     public object? Thing { get; set; }
 
     public Money Price { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public Sign Sign { get; set; }
+
+    public SignFlags SignFlags { get; set; }
+
+    public Point? Point { get; set; }
 
     public string? Field;
 

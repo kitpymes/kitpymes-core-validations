@@ -105,6 +105,17 @@ public sealed class OtherBehavior<TRequest, TResult> : IPipelineBehavior<TReques
     public Task<TResult> HandleAsync(TRequest request, NextHandler<TResult> next, CancellationToken cancellationToken) => next();
 }
 
+public sealed class Broken : ICommand<Result>
+{
+    public int Value { get; set; }
+}
+
+/// <summary>Mal configurado: MaxLength sobre un número lanza en el constructor.</summary>
+public sealed class BrokenValidator : Validator<Broken>
+{
+    public BrokenValidator() => RuleFor(x => x.Value).MaxLength(1);
+}
+
 public sealed class Catalog : IMediatorCatalog
 {
     public Catalog(params Type[] commands)

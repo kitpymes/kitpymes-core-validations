@@ -66,7 +66,15 @@ public class PipelineTests
         Assert.ThrowsExactly<ArgumentException>(() => services.LoadValidations(o => o.WithAssemblies()));
         Assert.ThrowsExactly<ArgumentException>(() => services.LoadValidations(o => o.WithAssemblies(null!, typeof(PipelineTests).Assembly)));
         Assert.ThrowsExactly<ArgumentNullException>(() => services.LoadValidations(o => o.WithAssemblies(null!)));
-        Assert.ThrowsExactly<ArgumentNullException>(() => services.LoadValidations((Action<Settings.ValidationsOptions>)null!));
+    }
+
+    [TestMethod]
+    public void Null_Options_Configure_Nothing_As_In_2_2_0()
+    {
+        var services = new ServiceCollection();
+        services.LoadValidations((Action<Settings.ValidationsOptions>)null!);
+
+        Assert.AreEqual(0, services.Count);
     }
 
     [TestMethod]
@@ -168,7 +176,10 @@ public class PipelineTests
         using var provider = Services().BuildServiceProvider();
         var check = provider.GetRequiredService<IValidationStartupCheck>();
 
-        await Assert.ThrowsExactlyAsync<OperationCanceledException>(() => check.CheckAsync(new Catalog(typeof(CreateOrder)), provider, source.Token));
+        var task = check.CheckAsync(new Catalog(typeof(CreateOrder)), provider, source.Token);
+
+        Assert.IsTrue(task.IsCanceled);
+        await Assert.ThrowsAsync<OperationCanceledException>(() => task);
     }
 
     [TestMethod]
@@ -210,6 +221,16 @@ public class PipelineTests
         Assert.IsTrue(result.IsFailure);
         StringAssert.Contains(result.Error.Message, "no está registrado para " + typeof(CreateOrder).FullName);
         StringAssert.Contains(result.Error.Message, "no está registrado para " + typeof(BadRoot).FullName);
+    }
+
+    [TestMethod]
+    public async Task StartupCheck_Goes_On_If_A_Validator_Cannot_Be_Created()
+    {
+        var result = await Check(Services(), typeof(Broken), typeof(WithoutValidator));
+
+        Assert.IsTrue(result.IsFailure);
+        StringAssert.Contains(result.Error.Message, typeof(Broken).FullName + ": no se pudo crear su validador:");
+        StringAssert.Contains(result.Error.Message, typeof(WithoutValidator).FullName + " no tiene validador");
     }
 
     [TestMethod]

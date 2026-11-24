@@ -436,7 +436,10 @@ public class ValidatorTests
         using var source = new CancellationTokenSource();
         await source.CancelAsync();
 
-        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => _ = await For(v => v.For(x => x.Name).Required()).ValidateAsync(new Order(), source.Token));
+        var pending = For(v => v.For(x => x.Name).Required()).ValidateAsync(new Order(), source.Token);
+
+        Assert.IsTrue(pending.IsCanceled);
+        await Assert.ThrowsAsync<OperationCanceledException>(async () => _ = await pending);
     }
 
     [TestMethod]
@@ -611,5 +614,102 @@ public class ValidatorTests
 
         Assert.AreEqual(50, errors.Count);
         Assert.IsTrue(errors.All(e => e.Code == ValidationErrorCodes.GreaterThan));
+    }
+
+    [TestMethod]
+    public async Task Rules_That_Throw_Do_So_When_Awaited()
+    {
+        var validator = For(v => v.For(x => x.Name).Must(_ => throw new FormatException("propia")));
+
+        var pending = validator.ValidateAsync(new Order());
+
+        Assert.IsTrue(pending.IsFaulted);
+        await Assert.ThrowsExactlyAsync<FormatException>(async () => _ = await pending);
+    }
+
+    [TestMethod]
+    public async Task IsInEnum_Works_With_Negative_Members()
+    {
+        await Valid(For(v => v.For(x => x.Sign).IsInEnum()), new Order { Sign = Sign.Negative });
+        await Single(For(v => v.For(x => x.Sign).IsInEnum()), new Order { Sign = (Sign)7 }, "sign", ValidationErrorCodes.Enum);
+        await Valid(For(v => v.For(x => x.SignFlags).IsInEnum()), new Order { SignFlags = SignFlags.Low | SignFlags.High });
+        await Valid(For(v => v.For(x => x.SignFlags).IsInEnum()), new Order { SignFlags = SignFlags.Low | SignFlags.Top });
+        await Single(For(v => v.For(x => x.SignFlags).IsInEnum()), new Order { SignFlags = (SignFlags)4 }, "signFlags", ValidationErrorCodes.Enum);
+    }
+
+    [TestMethod]
+    public async Task Value_Field_Behind_A_Null_Intermediate_Counts_As_Null()
+    {
+        var calls = 0;
+        var validator = For(v =>
+        {
+            v.For(x => x.Address!.Number).Required().GreaterThan(0).ContinueOnError();
+            v.For(x => x.Address!.Id).Must(_ => { calls++; return true; });
+        });
+
+        var errors = await Errors(validator, new Order { Address = null });
+
+        Assert.AreEqual(1, errors.Count);
+        Assert.AreEqual("address.number", errors[0].Field);
+        Assert.AreEqual(ValidationErrorCodes.Required, errors[0].Code);
+        Assert.AreEqual(0, calls);
+
+        await Single(validator, new Order { Address = new Address { Number = 0 } }, "address.number", ValidationErrorCodes.GreaterThan);
+        Assert.AreEqual(1, calls);
+    }
+
+    [TestMethod]
+    public void Invalid_Pattern_Throws_When_Configured()
+        => Assert.ThrowsExactly<System.Text.RegularExpressions.RegexParseException>(() => For(v => v.For(x => x.Name).Matches("(")));
+
+    [TestMethod]
+    public async Task Nullable_Value_Is_Not_Part_Of_The_Path()
+        => await Single(For(v => v.For(x => x.Point!.Value.X).GreaterThan(0)), new Order { Point = new Point() }, "point.x", ValidationErrorCodes.GreaterThan);
+
+    [TestMethod]
+    public async Task Null_Element_Gives_Required_Once()
+    {
+        var validator = For(v => v.ForEach(x => x.Lines).Required().ContinueOnError().SetValidator(new LineValidator()));
+
+        await Single(validator, new Order { Lines = new List<Line> { null! } }, "lines.0", ValidationErrorCodes.Required);
+    }
+
+    [TestMethod]
+    public async Task Values_In_Messages_Use_The_Ui_Culture_And_Null_Is_Named()
+    {
+        var culture = CultureInfo.CurrentCulture;
+        var ui = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("es-ES");
+            CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+            Assert.AreEqual("The field 'amount' must be greater than 1.5.", (await Errors(For(v => v.For(x => x.Amount).GreaterThan(1.5m)), new Order()))[0].Message);
+            Assert.AreEqual("The field 'name' must be null.", (await Errors(For(v => v.For(x => x.Name).Equal(null)), new Order { Name = "a" }))[0].Message);
+
+            CultureInfo.CurrentUICulture = new CultureInfo("es-ES");
+            Assert.AreEqual("El campo 'amount' debe ser mayor que 1,5.", (await Errors(For(v => v.For(x => x.Amount).GreaterThan(1.5m)), new Order()))[0].Message);
+            Assert.AreEqual("El campo 'name' no puede ser nulo.", (await Errors(For(v => v.For(x => x.Name).NotEqual(null)), new Order()))[0].Message);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = ui;
+        }
+    }
+
+    [TestMethod]
+    public async Task Texts_Are_Compared_By_Ordinal()
+    {
+        // Por ordinal, "a" (97) va detrás de "B" (66); con la cultura sería al revés.
+        await Valid(For(v => v.For(x => x.Name).GreaterThan("B")), new Order { Name = "a" });
+        await Single(For(v => v.For(x => x.Name).LessThan("B")), new Order { Name = "a" }, "name", ValidationErrorCodes.LessThan);
+    }
+
+    [TestMethod]
+    public void Between_Rejects_Null_Limits()
+    {
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Optional).Between(null, 1)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Optional).Between(1, null)));
     }
 }

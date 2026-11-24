@@ -16,6 +16,9 @@ namespace Kitpymes.Core.Validations.FluentValidation.Tests.Adapter;
 
 public sealed class Street
 {
+    [System.Text.Json.Serialization.JsonPropertyName("nombre_calle")]
+    public string? Label { get; set; }
+
     public string? Name { get; set; }
 }
 
@@ -68,6 +71,13 @@ public enum Kind
 
 public sealed class Sample
 {
+    [System.Text.Json.Serialization.JsonPropertyName("texto_libre")]
+    public string? Renamed { get; set; }
+
+    public List<Street> Streets { get; set; } = new ();
+
+    public Dictionary<string, Street> ByKey { get; set; } = new ();
+
     public string? Text { get; set; }
 
     public int Number { get; set; }
@@ -203,7 +213,28 @@ public class AdapterTests
     {
         Assert.ThrowsExactly<ArgumentNullException>(() => new FluentValidationAdapter<Customer>(null!));
         Assert.ThrowsExactly<InvalidOperationException>(() => new FluentValidationAdapter<Customer>(Array.Empty<IValidator<Customer>>()));
-        Assert.ThrowsExactly<InvalidOperationException>(() => new FluentValidationAdapter<Customer>(new IValidator<Customer>[] { new CustomerValidator(), new CustomerValidator() }));
+        Assert.ThrowsExactly<InvalidOperationException>(() => new FluentValidationAdapter<Customer>(new IValidator<Customer>[] { new CustomerValidator(), new InlineValidator<Customer>() }));
+    }
+
+    [TestMethod]
+    public async Task The_Same_Validator_Registered_Twice_Counts_As_One()
+    {
+        var adapter = new FluentValidationAdapter<Customer>(new IValidator<Customer>[] { new CustomerValidator(), new CustomerValidator() });
+
+        Assert.IsTrue((await adapter.ValidateAsync(Good())).IsSuccess);
+    }
+
+    [TestMethod]
+    public async Task Paths_Respect_JsonPropertyName_Also_Inside_Collections()
+    {
+        Assert.AreEqual("texto_libre", (await One(v => v.RuleFor(x => x.Renamed).NotNull(), new Sample())).Field);
+
+        var sample = new Sample();
+        sample.Streets.Add(new Street());
+        Assert.AreEqual("streets.0.nombre_calle", (await One(v => v.RuleForEach(x => x.Streets).ChildRules(s => s.RuleFor(x => x.Label).NotNull()), sample)).Field);
+
+        Assert.AreEqual("byKey.casa.nombre_calle", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("ByKey[casa].Label"), new Sample { Text = null })).Field);
+        Assert.AreEqual("desconocido.label", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("Desconocido.Label"), new Sample())).Field);
     }
 
     [TestMethod]
@@ -357,7 +388,7 @@ public class AdapterTests
         using var source = new System.Threading.CancellationTokenSource();
         await source.CancelAsync();
 
-        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => _ = await new FluentValidationAdapter<Customer>(new[] { new CustomerValidator() }).ValidateAsync(Good(), source.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(async () => _ = await new FluentValidationAdapter<Customer>(new[] { new CustomerValidator() }).ValidateAsync(Good(), source.Token));
     }
 
     [TestMethod]
@@ -373,7 +404,7 @@ public class AdapterTests
     [TestMethod]
     public void Needs_Exactly_One_Message_Says_How_Many()
     {
-        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => new FluentValidationAdapter<Customer>(new IValidator<Customer>[] { new CustomerValidator(), new CustomerValidator() }));
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => new FluentValidationAdapter<Customer>(new IValidator<Customer>[] { new CustomerValidator(), new InlineValidator<Customer>() }));
 
         Assert.AreEqual("Customer tiene 2 validadores de FluentValidation y el adaptador necesita exactamente uno.", exception.Message);
     }

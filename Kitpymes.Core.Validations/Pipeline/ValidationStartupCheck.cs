@@ -31,13 +31,29 @@ internal sealed class ValidationStartupCheck : IValidationStartupCheck
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(services);
 
+        return cancellationToken.IsCancellationRequested
+            ? Task.FromCanceled<Result>(cancellationToken)
+            : Task.FromResult(Check(catalog, services));
+    }
+
+    private static Result Check(IMediatorCatalog catalog, IServiceProvider services)
+    {
         var problems = new List<string>();
 
         foreach (var type in catalog.Commands.Concat(catalog.Queries).Distinct().OrderBy(t => t.FullName, StringComparer.Ordinal))
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            List<object?> validators;
 
-            var validators = services.GetServices(typeof(IValidator<>).MakeGenericType(type)).ToList();
+            try
+            {
+                validators = services.GetServices(typeof(IValidator<>).MakeGenericType(type)).ToList();
+            }
+            catch (Exception e)
+            {
+                // Un validador cuyo constructor lanza (una regla mal configurada) no corta la comprobación.
+                problems.Add($"{type.FullName}: no se pudo crear su validador: {e.Message}");
+                continue;
+            }
 
             if (validators.Count == 0)
             {
@@ -67,11 +83,11 @@ internal sealed class ValidationStartupCheck : IValidationStartupCheck
             }
         }
 
-        return Task.FromResult(problems.Count == 0
+        return problems.Count == 0
             ? Result.Success()
             : Result.Failure(Error.Unexpected(
                 ValidationErrorCodes.Configuration,
-                "La validación no está bien configurada:" + string.Concat(problems.Select(p => Environment.NewLine + "- " + p)))));
+                "La validación no está bien configurada:" + string.Concat(problems.Select(p => Environment.NewLine + "- " + p))));
     }
 
     private static Type? ResultType(Type request)
