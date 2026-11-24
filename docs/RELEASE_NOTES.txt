@@ -26,6 +26,7 @@ Obsoleto (se elimina en la 3.0.0; cada aviso dice qué usar):
 
 Cambios de comportamiento:
 - LoadValidations(Action<ValidationsOptions>) sigue aceptando unas opciones nulas, como en la 2.2.0, y no configura nada.
+- En la API nueva, GreaterThan, LessThan y Between comparan los textos por ordinal, sin cultura: "B" va antes que "a".
 - Ninguno en la API antigua: lo obsoleto funciona igual que en la 2.2.0.
 
 Dependencias (la validación de paquete no las ve):

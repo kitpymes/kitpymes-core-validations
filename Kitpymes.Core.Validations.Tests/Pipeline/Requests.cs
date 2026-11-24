@@ -116,6 +116,15 @@ public sealed class BrokenValidator : Validator<Broken>
     public BrokenValidator() => RuleFor(x => x.Value).MaxLength(1);
 }
 
+public sealed class BrokenBehavior<TRequest, TResult> : IPipelineBehavior<TRequest, TResult>
+    where TRequest : notnull
+    where TResult : Result
+{
+    public BrokenBehavior() => throw new InvalidOperationException("roto");
+
+    public Task<TResult> HandleAsync(TRequest request, NextHandler<TResult> next, CancellationToken cancellationToken) => next();
+}
+
 public sealed class Catalog : IMediatorCatalog
 {
     public Catalog(params Type[] commands)

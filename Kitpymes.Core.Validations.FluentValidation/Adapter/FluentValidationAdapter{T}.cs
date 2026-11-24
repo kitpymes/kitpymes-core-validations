@@ -232,12 +232,14 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
 
         parts.Add(member?.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? JsonNamingPolicy.CamelCase.ConvertName(part));
 
-        return member switch
+        var next = member switch
         {
             PropertyInfo property => property.PropertyType,
             FieldInfo field => field.FieldType,
             _ => null,
         };
+
+        return next is null ? null : Nullable.GetUnderlyingType(next) ?? next;
     }
 
     // Tipo de los elementos de una colección (o de los valores de un diccionario), para seguir la ruta tras [i].
@@ -253,7 +255,8 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
             return type.GetElementType();
         }
 
-        var dictionary = type.GetInterfaces().Append(type).FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+        var dictionary = type.GetInterfaces().Append(type).FirstOrDefault(i => i.IsGenericType
+            && (i.GetGenericTypeDefinition() == typeof(IDictionary<,>) || i.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>)));
 
         if (dictionary is not null)
         {
