@@ -10,7 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

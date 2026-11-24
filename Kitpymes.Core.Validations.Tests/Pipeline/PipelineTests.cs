@@ -50,11 +50,13 @@ public class PipelineTests
     }
 
     [TestMethod]
-    public void Without_Assemblies_Registers_Nothing_New()
+    public void Without_Assemblies_Throws()
     {
         var services = new ServiceCollection();
-        services.LoadValidations(_ => { });
 
+        var exception = Assert.ThrowsExactly<ArgumentException>(() => services.LoadValidations(_ => { }));
+
+        StringAssert.Contains(exception.Message, "WithAssemblies");
         Assert.AreEqual(0, services.Count);
     }
 
@@ -69,12 +71,10 @@ public class PipelineTests
     }
 
     [TestMethod]
-    public void Null_Options_Configure_Nothing_As_In_2_2_0()
+    public void Null_Options_Or_Services_Throw()
     {
-        var services = new ServiceCollection();
-        services.LoadValidations((Action<Settings.ValidationsOptions>)null!);
-
-        Assert.AreEqual(0, services.Count);
+        Assert.ThrowsExactly<ArgumentNullException>(() => new ServiceCollection().LoadValidations((Action<Settings.ValidationsOptions>)null!));
+        Assert.ThrowsExactly<ArgumentNullException>(() => ((IServiceCollection)null!).LoadValidations(o => o.WithAssemblies(typeof(PipelineTests).Assembly)));
     }
 
     [TestMethod]
@@ -270,17 +270,5 @@ public class PipelineTests
 
         Assert.AreEqual("Twice tiene 2 validadores registrados y sólo puede tener uno.", many.Message);
         Assert.AreEqual("El validador ManualValidator de ManualRequest devolvió un resultado nulo.", empty.Message);
-    }
-
-    [TestMethod]
-    public void Old_Settings_Still_Register_FluentValidation()
-    {
-        var off = new ServiceCollection();
-        off.LoadValidations(new Settings.ValidationsSettings { Enabled = false, FluentValidationSettings = new () { Enabled = true, Assemblies = new () { typeof(PipelineTests).Assembly.GetName().Name! } } });
-        Assert.AreEqual(0, off.Count);
-
-        var on = new ServiceCollection();
-        on.LoadValidations(new Settings.ValidationsSettings { Enabled = true, FluentValidationSettings = new () { Enabled = true, Assemblies = new () { typeof(PipelineTests).Assembly.GetName().Name! } } });
-        Assert.IsTrue(on.Count > 0);
     }
 }

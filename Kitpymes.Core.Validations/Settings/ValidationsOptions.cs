@@ -9,7 +9,6 @@ namespace Kitpymes.Core.Validations.Settings;
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Reflection;
 
 /*
@@ -29,30 +28,9 @@ public class ValidationsOptions
     private readonly List<Assembly> _assemblies = new ();
 
     /// <summary>
-    /// Obtiene la configuración de las validaciones.
-    /// </summary>
-    [Obsolete("Configuración de la API antigua. Use WithAssemblies con validadores Validator<T>. Se elimina en 3.0.0.", DiagnosticId = "KPY0007")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public ValidationsSettings ValidationsSettings { get; private set; } = new ValidationsSettings();
-
-    /// <summary>
     /// Obtiene los ensamblados de los validadores, sin repetir y en el orden en que se indicaron.
     /// </summary>
     internal IReadOnlyList<Assembly> Assemblies => _assemblies;
-
-    /// <summary>
-    /// Si se habilita el servicio de validaciones.
-    /// </summary>
-    /// <param name="enabled">Si se habilita o no.</param>
-    /// <returns>La clase ValidationsOptions.</returns>
-    [Obsolete("Activa la API antigua. Use WithAssemblies con validadores Validator<T>. Se elimina en 3.0.0.", DiagnosticId = "KPY0007")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public ValidationsOptions WithEnabled(bool enabled = true)
-    {
-        ValidationsSettings.Enabled = enabled;
-
-        return this;
-    }
 
     /// <summary>
     /// Registra los validadores (<see cref="Abstractions.IValidator{T}"/>) de los ensamblados, el paso de validación

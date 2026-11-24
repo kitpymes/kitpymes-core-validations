@@ -21,6 +21,8 @@
 
 * Conocimientos sobre Inyección de Dependencias
 
+* Sin ASP.NET Core: desde la 3.0.0 los paquetes sólo dependen de Kitpymes.Core.Results, Kitpymes.Core.Mediator.Abstractions y las abstracciones de inyección de dependencias (el adaptador, además, de FluentValidation)
+
 ## 🔧 Instalación 
 
 _Se puede instalar usando el administrador de paquetes Nuget o CLI dotnet._
@@ -39,7 +41,7 @@ dotnet add package Kitpymes.Core.Validations
 
 ## ⌨️ Código
 
-### Validator&lt;T&gt; (desde la 2.3.0)
+### Validator&lt;T&gt;
 
 Valida la forma de un comando, una consulta o cualquier objeto y devuelve un `Result` de Kitpymes.Core.Results: correcto, o un error de validación (`Validations.Invalido`) con un `FieldError` por cada campo que falla. Las reglas de negocio (duplicados, saldos) no van aquí, sino en el dominio o en el manejador.
 
@@ -83,234 +85,9 @@ services.LoadValidations(o => o.WithAssemblies(typeof(CustomerValidator).Assembl
 
 Expone cada `AbstractValidator<T>` como `IValidator<T>`, con las mismas rutas (`Items[0].Name` pasa a `items.0.name`) y los mismos códigos (`NotEmpty` da `Validations.Requerido`).
 
-### API antigua (obsoleta desde la 2.3.0; se elimina en la 3.0.0)
+### Migrar desde la 2.x
 
-Lo que sigue funciona igual, pero da los avisos KPY0005 a KPY0008, cada uno con lo que hay que usar en su lugar.
-
-```cs
-public class ValidationsException : Exception
-{
-    public ValidationsException(params string[] messages) {}
-
-    public ValidationsException(IDictionary<string, string> messages) {}
-
-    public int? Count { get; }
-
-    public bool Contains(string message) {}
-}
-```
-
-#### Validator
-
-```cs
-public static class Validator
-{
-    public static ValidatorRule AddRule(object? value, Action<ValidatorRuleOptions> options) {}
-
-    public static ValidatorRule AddRule(Func<bool> condition, string message) {}
-}
-```
-
-```cs
-public class ValidatorRule
-{
-    public bool IsValid { get; }
-
-    public static void Add(Func<string> rule)  {}
-
-    public ValidatorRule StopFirstError(bool stopFirstError = true) {}
-
-    public ValidatorRule AddRule(object? value, Action<ValidatorRuleOptions> options) {}
-
-    public ValidatorRule AddRule(Func<bool> condition, string message) {}
-
-    public void Throw() {}
-
-    public async Task ThrowAsync() {}
-
-    public void ThrowApplicationException() {}
-
-    public async Task ThrowApplicationExceptionAsync() {}
-}
-```
-
-```cs
-public class ValidatorRuleOptions
-{
-    public ValidatorRuleOptions IsNullOrAny(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsNullOrAnyWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsEqual(IEnumerable? valueCompare, (string fieldName, string fieldNameCompare)? fieldsName = null) {}
-
-    public ValidatorRuleOptions IsEqualWithMessage(IEnumerable? valueCompare, string message) {}
-
-    public ValidatorRuleOptions IsGreater(long max, string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsGreaterWithMessage(long max, string message) {}
-
-    public ValidatorRuleOptions IsLess(long min, string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsLessWithMessage(long min, string message) {}
-
-    public ValidatorRuleOptions IsNullOrEmpty(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsNullOrEmptyWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsRange(long min, long max, string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsRangeWithMessage(long min, long max, string message) {}
-
-    public ValidatorRuleOptions IsRegex(string regex, string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsRegexWithMessage(string regex, string message) {}
-
-    public ValidatorRuleOptions IsDirectory(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsDirectoryWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsEmail(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsEmailWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsFileExtension(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsFileExtensionWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsFile(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsFileWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsName(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsNameWithMessage(string message) {}
-
-    public ValidatorRuleOptions IsPassword(long min, string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsPasswordWithMessage(long min, string message) {}
-
-    public ValidatorRuleOptions IsSubdomain(string? overrideRureFieldName = null) {}
-
-    public ValidatorRuleOptions IsSubdomainWithMessage(string message) {}
-}
-```
-
-**Ejemplo**
-
-```cs
-using Kitpymes.Core.Validations;
-using System;
-
-public class Person
-{
-    public Person(int age, string name, string email)
-    {
-        Validator
-            .AddRule(age, x => x.IsLess(17).IsGreater(51).WithRuleFieldName("Edad"))
-            .AddRule(name, x => x.IsName("Nombre"))
-            .AddRule(email, x => x.IsEmailWithMessage("El correo eléctronico tiene un formato incorrecto."))
-            .Throw();
-
-        Id = Guid.NewGuid();
-        Age = age;
-        Name = name;
-        Email = email;
-    }
-
-    public Person ChangeName(string name)
-    {
-        Validator.AddRule(name, x => x.IsName("Nombre")).Throw();
-
-        Name = name;
-
-        return this;
-    }
-
-    public Guid Id { get; private set; }
-    public int Age { get; private set; }
-    public string? Name { get; private set; }
-    public string? Email { get; private set; }
-}
-```
-
-#### FluentValidation
-
-**Agregamos el middlware en la clase Startup**
-
-```cs
-public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-{
-    app.LoadValidations();
-}
-
-```
-
-**Opción 1: configuración desde el appsetings**
-
-```js
-{
-    "ValidationsSettings": {
-        "Enabled": true, // Default: false
-        "FluentValidationSettings": {
-            "Enabled": true, // Default: false
-            "Assemblies": [ "Api.Models" ] // Default: null
-        }
-    }
-}
-```
-
-```cs
-public void ConfigureServices(IServiceCollection services)
-{
-    services.LoadValidations(Configuration);
-}
-```
-
-**Opción 2: configuración manual, agregamos los assemblies en formato string**
-
-```cs
-public void ConfigureServices(IServiceCollection services)
-{
-    services.LoadValidations(validator => validator.WithEnabled().WithFluentValidation("App.Models"));
-}
-```
-
-**Ejemplo**
-
-```cs
-public class PersonAddDto 
-{
-    public int? Age { get; set; }
-    public string? Name { get; set; }
-    public string? Email { get; set; }
-}
-```
-
-```cs
-using FluentValidation;
-using Kitpymes.Core.Validations.FluentValidation;
-
-public class PersonAddDtoValidator : AbstractValidator<PersonAddDto>
-{
-    public PersonAddDtoValidator()
-    {
-        RuleFor(_ => _.Age).IsRange(17, 51, "Edad");
-        RuleFor(_ => _.Name).IsName("Nombre").IsLess(100);
-        RuleFor(_ => _.Email).IsEmailWithMessage("El correo eléctronico tiene un formato incorrecto.");
-    }
-}
-```
-
-## 🔩 Resultados ( Solo en modo Development muestra el Details )
-
-**Resultado utilizando FluentValidation**
-
-![Resultado utilizando FluentValidation](images/screenshot/resultados_addperson.png)
-
-**Resultado utilizando Validator**
-
-![Resultado utlizando Validator](images/screenshot/resultados_changename.png)
-
+La API antigua (`Validator.AddRule`, `ValidationsException`, el middleware y las extensiones de FluentValidation) se quitó en la 3.0.0. La guía punto por punto, con la tabla de equivalencias de reglas, está en las [notas de la versión](https://github.com/kitpymes/kitpymes-core-validations/blob/master/docs/RELEASE_NOTES.txt). Ojo: en la 2.x `IsGreater(10)` fallaba si el valor era mayor que 10; ahora el nombre dice lo válido (`LessThanOrEqual(10)`).
 
 ## ⚙️ Pruebas Unitarias
 
