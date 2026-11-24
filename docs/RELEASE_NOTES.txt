@@ -1,3 +1,22 @@
+# v.2.2.0
+Versión menor y no parche: corrige un fallo grave, pero cambia el comportamiento de quien encadenaba reglas de una forma que ya no se admite (abajo).
+
+Fallo corregido: todas las reglas de todas las peticiones iban a una misma lista estática.
+- Con dos validaciones a la vez (dos peticiones web, dos hilos), una podía recibir los errores de la otra, y el Throw() de una lanzaba o borraba los errores de la otra: una petición con datos inválidos podía pasar la validación. En paralelo también podía saltar NullReferenceException, porque la lista no era segura entre hilos.
+- Una regla que fallaba sin que nadie llamara a Throw() (por una excepción o un return en medio) dejaba su error en la lista para la siguiente validación, fuera de quien fuera.
+- Ahora cada cadena que empieza en Validator.AddRule tiene sus propios errores, y AddRule sobre una cadena añade a esa misma cadena.
+
+También corregido:
+- StopFirstError() en medio de una cadena se perdía (cada AddRule devolvía una cadena nueva); ahora vale para toda la cadena.
+- ThrowAsync ya no usa Task.Run: se ejecuta en el mismo hilo y el error sigue llegando en la tarea devuelta.
+
+Cambios de comportamiento:
+- Los errores ya no pasan de una cadena a otra. Si alguien hacía Validator.AddRule(a, ...); y luego Validator.AddRule(b, ...).Throw(); esperando que saliera también el error de a, ahora sólo sale el de b. Hay que encadenar: Validator.AddRule(a, ...).AddRule(b, ...).Throw();
+- ValidatorRule.Add (público) y las reglas de ValidatorRuleOptions sólo se pueden usar dentro de las opciones de una regla (Validator.AddRule(valor, opciones)). Fuera, por ejemplo con new ValidatorRuleOptions(valor).IsEmail(), lanzan InvalidOperationException; antes añadían el error a la lista estática.
+- Las opciones de una regla tienen que ser síncronas: lo que se añada después de un await dentro de ellas lanza InvalidOperationException.
+
+Sin cambios en la API pública. La validación de paquete compara con la 2.1.0.
+
 # v.2.1.0
 Versión menor y no parche: corrige vulnerabilidades sin cambiar la API pública, pero hereda el cambio de comportamiento de Kitpymes.Core.Logger 2.1.0 (abajo).
 Corrección de seguridad: Kitpymes.Core.Logger 2.0.0 traía dependencias con vulnerabilidades conocidas, que heredaba quien instalaba Validations.

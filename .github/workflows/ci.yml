@@ -102,6 +102,20 @@ jobs:
             echo "::error::Salen $hechos paquetes y hay $n librerías."; exit 1
           fi
           ls artifacts-prueba
+          # La validación de paquete no dice nada cuando pasa: la versión de referencia sólo se descarga para
+          # compararla, así que si no está en la caché, la validación no se ha ejecutado.
+          base=$(grep -o '<PackageValidationBaselineVersion>[^<]*' docs/props/Pack.Build.props | sed 's/.*>//')
+          if [ -z "$base" ]; then
+            echo "::error::No hay PackageValidationBaselineVersion en docs/props/Pack.Build.props."; exit 1
+          fi
+          cache="${NUGET_PACKAGES:-$HOME/.nuget/packages}"
+          for p in $(git ls-files 'Kitpymes.*.csproj' | grep -v Tests); do
+            id=$(basename "$p" .csproj | tr '[:upper:]' '[:lower:]')
+            if [ ! -d "$cache/$id/$base" ]; then
+              echo "::error::La validación de paquete de $id no se ha ejecutado contra la $base."; exit 1
+            fi
+            echo "Validación de paquete de $id contra la $base: ejecutada."
+          done
 
   # En cada rama, tests de mutación con Stryker.NET: mide si los tests detectan fallos metidos
   # a propósito. Un mutante que sobrevive es un test que falta. La puntuación sale en el resumen.
