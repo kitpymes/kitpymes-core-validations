@@ -67,10 +67,10 @@ public static class ValidationsServiceCollectionExtensions
     public static IServiceCollection LoadValidations(this IServiceCollection services, Action<ValidationsOptions> options)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(options);
 
+        // Como en la 2.2.0, unas opciones nulas no configuran nada.
         var configured = new ValidationsOptions();
-        options(configured);
+        options?.Invoke(configured);
 
         if (configured.Assemblies.Count > 0)
         {

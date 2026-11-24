@@ -24,6 +24,11 @@ internal static class Patterns
 
     internal static readonly TimeSpan Timeout = TimeSpan.FromSeconds(1);
 
-    internal static bool IsMatch(string value, string pattern)
-        => Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant, Timeout);
+    /// <summary>
+    /// Compila la expresión al configurar la regla: un patrón no válido lanza <see cref="ArgumentException"/> ahí y
+    /// no al validar.
+    /// </summary>
+    /// <param name="pattern">Expresión regular.</param>
+    /// <returns>La expresión compilada, con un tiempo máximo de un segundo.</returns>
+    internal static Regex Create(string pattern) => new (pattern, RegexOptions.CultureInvariant, Timeout);
 }

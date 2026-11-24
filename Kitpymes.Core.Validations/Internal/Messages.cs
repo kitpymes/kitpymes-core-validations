@@ -7,6 +7,7 @@
 
 namespace Kitpymes.Core.Validations.Internal;
 
+using System;
 using System.Globalization;
 
 /// <summary>
@@ -28,9 +29,11 @@ internal static class Messages
             ? $"The field '{field}' is nested more than {max} levels deep."
             : $"El campo '{field}' está anidado a más de {max} niveles.";
 
-    internal static string For(string code, string field, object? a = null, object? b = null)
+    internal static string For(string code, string field, object? first = null, object? second = null)
     {
         var en = English;
+        var a = Format(first, en);
+        var b = Format(second, en);
 
         return code switch
         {
@@ -52,4 +55,14 @@ internal static class Messages
             _ => en ? $"The field '{field}' is not valid." : $"El campo '{field}' no es válido.",
         };
     }
+
+    // Los valores se escriben con la cultura de los mensajes (CurrentUICulture), no con CurrentCulture, para que
+    // un mensaje en inglés no lleve "1,5"; un valor nulo se escribe como tal.
+    private static string Format(object? value, bool english)
+        => value switch
+        {
+            null => english ? "null" : "nulo",
+            IFormattable formattable => formattable.ToString(null, CultureInfo.CurrentUICulture),
+            _ => value.ToString() ?? string.Empty,
+        };
 }

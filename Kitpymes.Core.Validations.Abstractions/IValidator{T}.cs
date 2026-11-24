@@ -19,9 +19,11 @@ using Kitpymes.Core.Results;
 /// <see cref="FieldError"/> por cada campo que falla. Las reglas de negocio (duplicados, saldos) no van aquí:
 /// van en el dominio o en el manejador.</para>
 /// <para>El <see cref="ValueTask{TResult}"/> se espera una sola vez y no se guarda.</para>
+/// <para>Tiene el mismo nombre que <c>FluentValidation.IValidator&lt;T&gt;</c>: en un fichero que importe los dos
+/// espacios de nombres, use un alias (<c>using KValidator = Kitpymes.Core.Validations.Abstractions;</c>).</para>
 /// </remarks>
 /// <typeparam name="T">Tipo del objeto que se valida.</typeparam>
-public interface IValidator<T>
+public interface IValidator<in T>
 {
     /// <summary>
     /// Valida el objeto.

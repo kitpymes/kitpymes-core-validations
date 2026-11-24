@@ -35,21 +35,26 @@ public abstract class Validator<T> : IValidator<T>, IValidatorConfiguration
     private readonly List<IRule<T>> _rules = new ();
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// <para>No lanza nada al llamarlo: una cancelación, una regla que lanza (un <c>Must</c> o un <c>Custom</c>
+    /// propios), una expresión que tarda más de un segundo (<see cref="System.Text.RegularExpressions.RegexMatchTimeoutException"/>)
+    /// o una regla sobre el objeto entero sin <c>WithName</c> (<see cref="InvalidOperationException"/>) llegan en el
+    /// <see cref="ValueTask{TResult}"/> devuelto, al esperarlo.</para>
+    /// </remarks>
     public ValueTask<Result> ValidateAsync(T instance, CancellationToken cancellationToken = default)
     {
-        if (instance is null)
+        try
         {
-            return new ValueTask<Result>(Result.Failure(Error.Validation(ValidationErrorCodes.Invalid, Messages.NullInstance(typeof(T).Name))));
+            return new ValueTask<Result>(Validate(instance, cancellationToken));
         }
-
-        var context = new ValidationContext(cancellationToken);
-        context.Root(instance);
-
-        Collect(instance, context, string.Empty);
-
-        return new ValueTask<Result>(context.Errors.Count == 0
-            ? Result.Success()
-            : Result.Failure(Error.Validation(ValidationErrorCodes.Invalid, Messages.Invalid(), context.Errors)));
+        catch (OperationCanceledException e) when (e.CancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled<Result>(e.CancellationToken);
+        }
+        catch (Exception e)
+        {
+            return ValueTask.FromException<Result>(e);
+        }
     }
 
     /// <inheritdoc/>
@@ -106,5 +111,22 @@ public abstract class Validator<T> : IValidator<T>, IValidatorConfiguration
         }
 
         _rules.Add(new IncludedRule<T>(validator));
+    }
+
+    private Result Validate(T instance, CancellationToken cancellationToken)
+    {
+        if (instance is null)
+        {
+            return Result.Failure(Error.Validation(ValidationErrorCodes.Invalid, Messages.NullInstance(typeof(T).Name)));
+        }
+
+        var context = new ValidationContext(cancellationToken);
+        context.Root(instance);
+
+        Collect(instance, context, string.Empty);
+
+        return context.Errors.Count == 0
+            ? Result.Success()
+            : Result.Failure(Error.Validation(ValidationErrorCodes.Invalid, Messages.Invalid(), context.Errors));
     }
 }

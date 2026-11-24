@@ -1,4 +1,4 @@
-# v.2.3.0
+﻿# v.2.3.0
 Versión menor: añade la API nueva de validación y marca como obsoleta la antigua, que sigue funcionando igual. La 3.0.0 sólo quitará lo obsoleto.
 
 API nueva (Kitpymes.Core.Validations y Kitpymes.Core.Validations.Abstractions):
@@ -24,7 +24,23 @@ Obsoleto (se elimina en la 3.0.0; cada aviso dice qué usar):
 - KPY0007: ValidationsMiddleware, LoadValidations(IApplicationBuilder), ValidationsSettings, LoadValidations() y LoadValidations(ValidationsSettings), ValidationsOptions.WithEnabled y ValidationsOptions.ValidationsSettings.
 - KPY0008: las extensiones de reglas de FluentValidation (IsEmail, IsName...), LoadFluentValidation, FluentValidationSettings y ValidationResultExtensions.
 
-Dependencias: Kitpymes.Core.Results 1.0.1 a 1.2.1 (también en Abstractions) y Kitpymes.Core.Mediator.Abstractions 1.0.1 nueva. La validación de paquete compara con la 2.2.0.
+Cambios de comportamiento:
+- LoadValidations(Action<ValidationsOptions>) sigue aceptando unas opciones nulas, como en la 2.2.0, y no configura nada.
+- Ninguno en la API antigua: lo obsoleto funciona igual que en la 2.2.0.
+
+Dependencias (la validación de paquete no las ve):
+- Kitpymes.Core.Results pasa de 1.0.1 a 1.2.1, también en Abstractions. Lo que cambia para quien la usa de rebote (ver sus notas):
+  - ApiResult.Error(...) sin mensajes y WithErrors(tuplas) con un campo o mensaje vacío lanzan ArgumentException en lugar de SharedException (1.2.0): un catch (SharedException) deja de capturarlo.
+  - WithErrors(tuplas) con un campo repetido suma sus mensajes en lugar de quedarse con el último (1.2.1).
+  - Trae el analizador KPY0003 (1.1.0): un Result que se descarta sin mirarlo da error de compilación; '_ =' es el descarte explícito.
+  - Los tipos Result y Error (1.1.0) pueden chocar (CS0104) con otra librería que tenga los mismos nombres; se resuelve con un alias de using.
+  - Quien referencie Kitpymes.Core.Results 1.0.1 de forma explícita recibe NU1605 (bajada de versión): hay que subirla a 1.2.1.
+- Kitpymes.Core.Mediator.Abstractions 1.0.1 es nueva y llega también a quien sólo usa la API antigua.
+- IValidator<T> se llama igual que el de FluentValidation: en un fichero con los dos using, use un alias.
+
+Los avisos de obsoleto rompen la compilación con TreatWarningsAsErrors. Mientras se migra, se pueden silenciar con <NoWarn>$(NoWarn);KPY0005;KPY0006;KPY0007;KPY0008</NoWarn>.
+
+La validación de paquete compara con la 2.2.0.
 
 # v.2.2.0
 Versión menor y no parche: corrige un fallo grave, pero cambia el comportamiento de quien encadenaba reglas de una forma que ya no se admite (abajo).

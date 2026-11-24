@@ -42,7 +42,12 @@ internal sealed class MemberPath
 
         while (body is MemberExpression member && (member.Member is PropertyInfo || member.Member is FieldInfo))
         {
-            members.Insert(0, member.Member);
+            // x => x.Point!.Value.X con Point de tipo Punto?: Value no es parte de la ruta.
+            if (!IsNullableValue(member.Member))
+            {
+                members.Insert(0, member.Member);
+            }
+
             body = member.Expression is null ? null : Unwrap(member.Expression);
         }
 
@@ -79,6 +84,11 @@ internal sealed class MemberPath
 
         return current;
     }
+
+    private static bool IsNullableValue(MemberInfo member)
+        => member.Name == nameof(Nullable<int>.Value)
+            && member.DeclaringType is not null
+            && Nullable.GetUnderlyingType(member.DeclaringType) is not null;
 
     private static Expression Unwrap(Expression expression)
         => expression is UnaryExpression unary

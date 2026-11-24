@@ -11,8 +11,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Kitpymes.Core.Results;
@@ -25,11 +27,14 @@ using FV = global::FluentValidation;
 /// </summary>
 /// <remarks>
 /// <para>Cada fallo de FluentValidation se convierte en un <see cref="FieldError"/> con la ruta de Angular
-/// (<c>Items[0].Name</c> pasa a <c>items.0.name</c>) y un código <c>Validations.*</c> equivalente al de la regla
+/// (<c>Items[0].Name</c> pasa a <c>items.0.name</c>, respetando <c>[JsonPropertyName]</c>) y un código <c>Validations.*</c> equivalente al de la regla
 /// (<c>NotEmpty</c> da <c>Validations.Requerido</c>). Un código propio puesto con <c>WithErrorCode</c> se respeta si
 /// tiene la forma <c>Modulo.Motivo</c> y no usa el prefijo <c>Validations.</c>; si no, queda
 /// <c>Validations.Condicion</c>. Los fallos sin campo (reglas sobre el objeto entero sin
 /// <c>OverridePropertyName</c>) van al mensaje del error.</para>
+/// <para>Las reglas siguen siendo las de FluentValidation: <c>NotEmpty</c> da <c>Validations.Requerido</c> pero, a
+/// diferencia de <c>Required</c> de <c>Validator&lt;T&gt;</c>, también falla con el valor por defecto de un tipo valor
+/// (<c>0</c>, <c>Guid.Empty</c>).</para>
 /// <para>Se registra con <c>LoadFluentValidationAdapters</c>.</para>
 /// </remarks>
 /// <typeparam name="T">Tipo que se valida.</typeparam>
@@ -76,9 +81,11 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
     {
         ArgumentNullException.ThrowIfNull(validators);
 
-        var list = validators.ToList();
+        // El mismo validador registrado dos veces (por LoadFluentValidationAdapters y por AddValidatorsFromAssemblies
+        // de FluentValidation) cuenta como uno.
+        var list = validators.Where(v => v is not null).DistinctBy(v => v.GetType()).ToList();
 
-        if (list.Count != 1 || list[0] is null)
+        if (list.Count != 1)
         {
             throw new InvalidOperationException(
                 $"{typeof(T).Name} tiene {list.Count} validadores de FluentValidation y el adaptador necesita exactamente uno.");
@@ -149,6 +156,7 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
 
         var parts = new List<string>();
         var current = new StringBuilder();
+        Type? type = typeof(T);
         var i = 0;
 
         while (i < propertyName.Length)
@@ -157,12 +165,12 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
 
             if (c == '.')
             {
-                Flush(parts, current);
+                type = Flush(parts, current, type);
                 i++;
             }
             else if (c == '[')
             {
-                Flush(parts, current);
+                type = Flush(parts, current, type);
                 var end = propertyName.IndexOf(']', i + 1);
                 end = end < 0 ? propertyName.Length : end;
                 var key = propertyName.Substring(i + 1, end - i - 1);
@@ -171,6 +179,8 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
                 {
                     parts.Add(key);
                 }
+
+                type = ElementType(type);
 
                 i = end + 1;
             }
@@ -181,7 +191,7 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
             }
         }
 
-        Flush(parts, current);
+        Flush(parts, current, type);
 
         return string.Join(".", parts);
     }
@@ -206,15 +216,53 @@ public sealed class FluentValidationAdapter<T> : IValidator<T>
         return IsValidCode(errorCode) && !errorCode.StartsWith(Prefix, StringComparison.Ordinal) ? errorCode : ConditionCode;
     }
 
-    private static void Flush(List<string> parts, StringBuilder current)
+    // Añade el nombre del campo como lo escribe System.Text.Json ([JsonPropertyName] o camelCase) y devuelve su tipo,
+    // para seguir la ruta; si no se encuentra el miembro, camelCase y tipo desconocido.
+    private static Type? Flush(List<string> parts, StringBuilder current, Type? type)
     {
         var part = current.ToString().Trim();
         current.Clear();
 
-        if (part.Length > 0)
+        if (part.Length == 0)
         {
-            parts.Add(JsonNamingPolicy.CamelCase.ConvertName(part));
+            return type;
         }
+
+        var member = type?.GetMember(part, MemberTypes.Property | MemberTypes.Field, BindingFlags.Public | BindingFlags.Instance).FirstOrDefault();
+
+        parts.Add(member?.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? JsonNamingPolicy.CamelCase.ConvertName(part));
+
+        return member switch
+        {
+            PropertyInfo property => property.PropertyType,
+            FieldInfo field => field.FieldType,
+            _ => null,
+        };
+    }
+
+    // Tipo de los elementos de una colección (o de los valores de un diccionario), para seguir la ruta tras [i].
+    private static Type? ElementType(Type? type)
+    {
+        if (type is null)
+        {
+            return null;
+        }
+
+        if (type.IsArray)
+        {
+            return type.GetElementType();
+        }
+
+        var dictionary = type.GetInterfaces().Append(type).FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+        if (dictionary is not null)
+        {
+            return dictionary.GetGenericArguments()[1];
+        }
+
+        var enumerable = type.GetInterfaces().Append(type).FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+        return enumerable?.GetGenericArguments()[0];
     }
 
     private static string DefaultMessage(string field)
