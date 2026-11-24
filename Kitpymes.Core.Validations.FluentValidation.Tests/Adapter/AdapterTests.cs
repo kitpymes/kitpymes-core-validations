@@ -61,6 +61,25 @@ public sealed class CustomerValidator : AbstractValidator<Customer>
     }
 }
 
+public enum Kind
+{
+    A = 0,
+}
+
+public sealed class Sample
+{
+    public string? Text { get; set; }
+
+    public int Number { get; set; }
+
+    public Kind Kind { get; set; }
+}
+
+/// <summary>No se registra: es abstracto.</summary>
+public abstract class BaseItemValidator : AbstractValidator<Item>
+{
+}
+
 [TestClass]
 public class AdapterTests
 {
@@ -214,5 +233,148 @@ public class AdapterTests
         Assert.ThrowsExactly<ArgumentException>(() => services.LoadFluentValidationAdapters());
         Assert.ThrowsExactly<ArgumentException>(() => services.LoadFluentValidationAdapters(null!, typeof(AdapterTests).Assembly));
         Assert.ThrowsExactly<ArgumentNullException>(() => services.LoadFluentValidationAdapters(null!));
+    }
+
+    private static async Task<FieldError> One(Action<InlineValidator<Sample>> rules, Sample sample)
+    {
+        var validator = new InlineValidator<Sample>();
+        rules(validator);
+
+        var result = await new FluentValidationAdapter<Sample>(new[] { validator }).ValidateAsync(sample);
+
+        Assert.IsTrue(result.IsFailure);
+        Assert.AreEqual(1, result.Error.Fields.Count, string.Join(" | ", result.Error.Fields));
+
+        return result.Error.Fields[0];
+    }
+
+    [TestMethod]
+    public async Task Every_Mapped_Rule_Gets_Its_Code()
+    {
+        var cases = new (Action<InlineValidator<Sample>> Rules, Sample Sample, string Code)[]
+        {
+            (v => v.RuleFor(x => x.Text).NotNull(), new Sample(), ValidationErrorCodes.Required),
+            (v => v.RuleFor(x => x.Text).MinimumLength(3), new Sample { Text = "a" }, ValidationErrorCodes.MinLength),
+            (v => v.RuleFor(x => x.Text).Matches("^x$"), new Sample { Text = "a" }, ValidationErrorCodes.Format),
+            (v => v.RuleFor(x => x.Number).GreaterThan(0), new Sample(), ValidationErrorCodes.GreaterThan),
+            (v => v.RuleFor(x => x.Number).GreaterThanOrEqualTo(1), new Sample(), ValidationErrorCodes.GreaterThanOrEqual),
+            (v => v.RuleFor(x => x.Number).LessThan(0), new Sample(), ValidationErrorCodes.LessThan),
+            (v => v.RuleFor(x => x.Number).LessThanOrEqualTo(-1), new Sample(), ValidationErrorCodes.LessThanOrEqual),
+            (v => v.RuleFor(x => x.Number).Equal(1), new Sample(), ValidationErrorCodes.Equal),
+            (v => v.RuleFor(x => x.Number).NotEqual(0), new Sample(), ValidationErrorCodes.NotEqual),
+            (v => v.RuleFor(x => x.Kind).IsInEnum(), new Sample { Kind = (Kind)5 }, ValidationErrorCodes.Enum),
+            (v => v.RuleFor(x => x.Number).ExclusiveBetween(0, 1), new Sample(), ValidationErrorCodes.Condition),
+        };
+
+        foreach (var (rules, sample, code) in cases)
+        {
+            Assert.AreEqual(code, (await One(rules, sample)).Code);
+        }
+    }
+
+    [TestMethod]
+    public async Task Own_Codes_Follow_The_Same_Form_As_Results()
+    {
+        foreach (var good in new[] { "AZ.Zaz09", "A.B.C", "M1.X9" })
+        {
+            Assert.AreEqual(good, (await One(v => v.RuleFor(x => x.Text).NotNull().WithErrorCode(good), new Sample())).Code);
+        }
+
+        foreach (var bad in new[] { "Pedidos", "pedidos.X", "Pedidos.x", "Pedidos..X", "Pedidos.X-Y", "Pedidos.Ñu", "1Pedidos.X", "Pedidos.", "Pe[dido.X", "Pedidos.X{", "Pedidos.X`", "Pedidos.X@", "Pedidos.X:", "Pedidos.X/" })
+        {
+            Assert.AreEqual(ValidationErrorCodes.Condition, (await One(v => v.RuleFor(x => x.Text).NotNull().WithErrorCode(bad), new Sample())).Code);
+        }
+    }
+
+    [TestMethod]
+    public async Task Odd_Property_Names_Still_Give_A_Path()
+    {
+        Assert.AreEqual("lista.3", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("Lista[3"), new Sample())).Field);
+        Assert.AreEqual("lista", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("Lista[]"), new Sample())).Field);
+        Assert.AreEqual("a.b", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("A..B"), new Sample())).Field);
+        Assert.AreEqual("datos.Clave X.valor", (await One(v => v.RuleFor(x => x.Text).NotNull().OverridePropertyName("Datos[Clave X].Valor"), new Sample())).Field);
+    }
+
+    [TestMethod]
+    public async Task Empty_Message_Gets_The_Default()
+    {
+        var culture = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo("es-ES");
+            Assert.AreEqual("El campo 'text' no es válido.", (await One(v => v.RuleFor(x => x.Text).NotNull().WithMessage(" "), new Sample())).Message);
+
+            CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+            Assert.AreEqual("The field 'text' is not valid.", (await One(v => v.RuleFor(x => x.Text).NotNull().WithMessage(" "), new Sample())).Message);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = culture;
+        }
+    }
+
+    [TestMethod]
+    public async Task Failures_Without_Field_Are_Joined_After_The_General_Message()
+    {
+        var customer = Good();
+        customer.Name = "raiz";
+        var culture = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo("es-ES");
+            Assert.AreEqual("Hay errores de validación. El cliente no es válido.", (await Validate(customer)).Error!.Message);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = culture;
+        }
+    }
+
+    [TestMethod]
+    public async Task Null_Instance_Message_Follows_The_Culture()
+    {
+        var culture = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            CultureInfo.CurrentUICulture = new CultureInfo("es-ES");
+            Assert.AreEqual("El objeto a validar (Customer) es nulo.", (await Validate(null!)).Error!.Message);
+
+            CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+            Assert.AreEqual("The object to validate (Customer) is null.", (await Validate(null!)).Error!.Message);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = culture;
+        }
+    }
+
+    [TestMethod]
+    public async Task Cancelled_Token_Throws()
+    {
+        using var source = new System.Threading.CancellationTokenSource();
+        await source.CancelAsync();
+
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => _ = await new FluentValidationAdapter<Customer>(new[] { new CustomerValidator() }).ValidateAsync(Good(), source.Token));
+    }
+
+    [TestMethod]
+    public void Abstract_Validators_Are_Not_Registered()
+    {
+        var services = new ServiceCollection();
+        services.LoadFluentValidationAdapters(typeof(AdapterTests).Assembly);
+
+        Assert.AreEqual(0, services.Count(d => d.ServiceType == typeof(IValidator<Item>)));
+        Assert.AreEqual(0, services.Count(d => d.ServiceType == typeof(Kitpymes.Core.Validations.Abstractions.IValidator<Item>)));
+    }
+
+    [TestMethod]
+    public void Needs_Exactly_One_Message_Says_How_Many()
+    {
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => new FluentValidationAdapter<Customer>(new IValidator<Customer>[] { new CustomerValidator(), new CustomerValidator() }));
+
+        Assert.AreEqual("Customer tiene 2 validadores de FluentValidation y el adaptador necesita exactamente uno.", exception.Message);
     }
 }

@@ -453,4 +453,163 @@ public class ValidatorTests
             Assert.AreEqual(i % 2 == 0 ? 0 : 1, result.Error?.Fields.Count ?? 0);
         }
     }
+
+    [TestMethod]
+    public async Task Default_Messages_In_Spanish_And_English()
+    {
+        var cases = new (Action<TestValidator<Order>> Rules, Order Order, string Es, string En)[]
+        {
+            (v => v.For(x => x.Name).Required(), new Order(), "El campo 'name' es obligatorio.", "The field 'name' is required."),
+            (v => v.For(x => x.Name).MaxLength(1), new Order { Name = "ab" }, "El campo 'name' debe tener como máximo 1 caracteres.", "The field 'name' must have at most 1 characters."),
+            (v => v.For(x => x.Name).MinLength(3), new Order { Name = "ab" }, "El campo 'name' debe tener como mínimo 3 caracteres.", "The field 'name' must have at least 3 characters."),
+            (v => v.For(x => x.Name).Email(), new Order { Name = "ab" }, "El campo 'name' no es un email válido.", "The field 'name' is not a valid email."),
+            (v => v.For(x => x.Name).Name(), new Order { Name = "a1" }, "El campo 'name' no es un nombre válido.", "The field 'name' is not a valid name."),
+            (v => v.For(x => x.Name).Subdomain(), new Order { Name = "a b" }, "El campo 'name' no es un subdominio válido.", "The field 'name' is not a valid subdomain."),
+            (v => v.For(x => x.Name).Matches("^x$"), new Order { Name = "a" }, "El campo 'name' no tiene un formato válido.", "The field 'name' does not have a valid format."),
+            (v => v.For(x => x.Age).GreaterThan(1), new Order(), "El campo 'age' debe ser mayor que 1.", "The field 'age' must be greater than 1."),
+            (v => v.For(x => x.Age).GreaterThanOrEqual(1), new Order(), "El campo 'age' debe ser mayor o igual que 1.", "The field 'age' must be greater than or equal to 1."),
+            (v => v.For(x => x.Age).LessThan(0), new Order(), "El campo 'age' debe ser menor que 0.", "The field 'age' must be less than 0."),
+            (v => v.For(x => x.Age).LessThanOrEqual(-1), new Order(), "El campo 'age' debe ser menor o igual que -1.", "The field 'age' must be less than or equal to -1."),
+            (v => v.For(x => x.Age).Between(1, 2), new Order(), "El campo 'age' debe estar entre 1 y 2.", "The field 'age' must be between 1 and 2."),
+            (v => v.For(x => x.Age).Equal(1), new Order(), "El campo 'age' debe ser 1.", "The field 'age' must be 1."),
+            (v => v.For(x => x.Age).NotEqual(0), new Order(), "El campo 'age' no puede ser 0.", "The field 'age' cannot be 0."),
+            (v => v.For(x => x.Status).IsInEnum(), new Order { Status = (Status)9 }, "El campo 'status' tiene un valor que no es válido.", "The field 'status' has a value that is not valid."),
+            (v => v.For(x => x.Age).Must(a => a > 0), new Order(), "El campo 'age' no es válido.", "The field 'age' is not valid."),
+        };
+
+        var culture = CultureInfo.CurrentUICulture;
+
+        try
+        {
+            foreach (var (rules, order, es, en) in cases)
+            {
+                var validator = For(rules);
+
+                CultureInfo.CurrentUICulture = new CultureInfo("es-ES");
+                Assert.AreEqual(es, (await Errors(validator, order))[0].Message);
+
+                CultureInfo.CurrentUICulture = new CultureInfo("en-GB");
+                Assert.AreEqual(en, (await Errors(validator, order))[0].Message);
+            }
+
+            var root = new Address { Street = "0" };
+            var current = root;
+
+            for (var i = 0; i < 40; i++)
+            {
+                current.Next = new Address { Street = "x" };
+                current = current.Next;
+            }
+
+            CultureInfo.CurrentUICulture = new CultureInfo("en-US");
+            StringAssert.Contains((await Errors(new ChainValidator(), root))[0].Message, "is nested more than 32 levels deep.");
+            Assert.AreEqual("The object to validate (Order) is null.", (await For(v => v.For(x => x.Name).Required()).ValidateAsync(null!)).Error!.Message);
+
+            CultureInfo.CurrentUICulture = new CultureInfo("es-ES");
+            StringAssert.Contains((await Errors(new ChainValidator(), root))[0].Message, "está anidado a más de 32 niveles.");
+            Assert.AreEqual("El objeto a validar (Order) es nulo.", (await For(v => v.For(x => x.Name).Required()).ValidateAsync(null!)).Error!.Message);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = culture;
+        }
+    }
+
+    [TestMethod]
+    public void Own_Codes_Must_Be_Module_Dot_Reason_PascalCase_Ascii()
+    {
+        foreach (var good in new[] { "Pedidos.SinNombre", "AZ.Zaz09", "A.B.C", "M1.X9" })
+        {
+            For(v => v.For(x => x.Name).Required().WithErrorCode(good));
+        }
+
+        foreach (var bad in new[] { "Pedidos", "pedidos.SinNombre", "Pedidos.sinNombre", "Pedidos..X", "Pedidos.X-Y", "Pedidos.Ñu", "1Pedidos.X", "Pedidos.X ", ".Pedidos", "Pedidos.", "Pe[dido.X", "Pedidos.X{", "Pedidos.X`", "Pedidos.X@", "Pedidos.X:", "Pedidos.X/" })
+        {
+            Assert.ThrowsExactly<ArgumentException>(() => For(v => v.For(x => x.Name).Required().WithErrorCode(bad)));
+        }
+
+        Assert.ThrowsExactly<ArgumentException>(() => For(v => v.For(x => x.Name).Required().WithErrorCode(null!)));
+    }
+
+    [TestMethod]
+    public void Null_Arguments_Throw_When_Configured()
+    {
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Name).Must((Func<string?, bool>)null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Name).Must((Func<Order, string?, bool>)null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Name).Custom(null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Address).SetValidator((Validator<Address>)null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Name).When(null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.Add(null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For<string?>(null!)));
+        Assert.ThrowsExactly<ArgumentNullException>(() => For(v => v.For(x => x.Name).Matches(null!)));
+        Assert.ThrowsExactly<ArgumentException>(() => For(v => v.For(x => x.Name).Matches(string.Empty)));
+    }
+
+    [TestMethod]
+    public void SetValidator_Needs_A_Validator_Of_The_Same_Type()
+    {
+        var exception = Assert.ThrowsExactly<InvalidOperationException>(() => For(v => v.For(x => x.Thing).SetValidator(new AddressValidator())));
+
+        StringAssert.Contains(exception.Message, "'thing'");
+    }
+
+    [TestMethod]
+    public async Task Between_Accepts_Equal_Limits_And_Needs_Comparable_Values()
+    {
+        await Valid(For(v => v.For(x => x.Age).Between(1, 1)), new Order { Age = 1 });
+        Assert.ThrowsExactly<InvalidOperationException>(() => For(v => v.For(x => x.Address).Between(new Address(), new Address())));
+    }
+
+    [TestMethod]
+    public async Task Values_With_Only_Generic_IComparable_Can_Be_Compared()
+    {
+        var validator = For(v => v.For(x => x.Price).GreaterThan(new Money(10)));
+
+        await Valid(validator, new Order { Price = new Money(11) });
+        var errors = await Errors(validator, new Order { Price = new Money(10) });
+        StringAssert.Contains(errors[0].Message, "10 EUR");
+    }
+
+    [TestMethod]
+    public async Task Boxed_Values_Keep_The_Path()
+        => await Single(For(v => v.For<object?>(x => x.Age).Must(a => (int)a! > 0)), new Order(), "age", ValidationErrorCodes.Condition);
+
+    [TestMethod]
+    public async Task Patterns_Skip_Null()
+        => await Valid(For(v => v.For(x => x.Email).Email().Name().Subdomain().Matches("^x$")), new Order { Email = null });
+
+    [TestMethod]
+    public async Task ContinueOnError_Also_Runs_The_Child_Validator()
+    {
+        var validator = For(v => v.For(x => x.Address).Must(a => a!.Street is not null).SetValidator(new AddressValidator()).ContinueOnError());
+
+        var errors = await Errors(validator, new Order { Address = new Address() });
+
+        CollectionAssert.AreEqual(new[] { "address", "address.street" }, errors.Select(e => e.Field).ToArray());
+    }
+
+    [TestMethod]
+    public async Task The_Same_Object_In_Two_Places_Is_Validated_In_Both()
+    {
+        var line = new Line();
+        var validator = For(v => v.ForEach(x => x.Lines).SetValidator(new LineValidator()));
+
+        var errors = await Errors(validator, new Order { Lines = new List<Line> { line, line } });
+
+        CollectionAssert.AreEqual(
+            new[] { "lines.0.name", "lines.0.quantity", "lines.1.name", "lines.1.quantity" },
+            errors.Select(e => e.Field).ToArray());
+    }
+
+    [TestMethod]
+    public async Task Many_Siblings_Do_Not_Count_As_Depth()
+    {
+        var validator = For(v => v.ForEach(x => x.Lines).SetValidator(new LineValidator()));
+        var lines = Enumerable.Range(0, 50).Select(_ => new Line { Name = "a" }).ToList();
+
+        var errors = await Errors(validator, new Order { Lines = lines });
+
+        Assert.AreEqual(50, errors.Count);
+        Assert.IsTrue(errors.All(e => e.Code == ValidationErrorCodes.GreaterThan));
+    }
 }
