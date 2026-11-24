@@ -1,5 +1,5 @@
 # v.3.0.0
-Versión mayor: quita la API antigua, marcada como obsoleta en la 2.3.0 (KPY0005 a KPY0008), y las dependencias que sólo usaba ella. La API nueva de la 2.3.0 no cambia. Quien ya compila la 2.3.0 sin avisos KPY0005 a KPY0008 sólo tiene que mirar los puntos 1, 2 y 7.
+Versión mayor: quita la API antigua, marcada como obsoleta en la 2.3.0 (KPY0005 a KPY0008), y las dependencias que sólo usaba ella. La API nueva de la 2.3.0 no cambia, salvo LoadValidations sin ensamblados (punto 2). Quien ya no usa nada de lo marcado como obsoleto en la 2.3.0 sólo tiene que mirar los puntos 1, 2 y 7.
 
 Qué se quita:
 - Kitpymes.Core.Validations: Validator (estático), ValidatorRule, ValidatorRuleOptions y todas sus reglas (IsEmail, IsGreater...), ValidationsMiddleware, LoadValidations(IApplicationBuilder), LoadValidations() (leía la sección ValidationsSettings de la configuración), LoadValidations(ValidationsSettings), ValidationsSettings, ValidationsOptions.WithEnabled y ValidationsOptions.ValidationsSettings.
@@ -7,13 +7,13 @@ Qué se quita:
 - Kitpymes.Core.Validations.FluentValidation: las extensiones de reglas (IsEmail, IsName, IsNullOrEmpty...), LoadFluentValidation, FluentValidationSettings y ValidationResultExtensions.
 
 Dependencias:
-- Kitpymes.Core.Validations ya no depende de Kitpymes.Core.Shared, Kitpymes.Core.Logger, Kitpymes.Core.Logger.Abstractions, ASP.NET Core (Microsoft.AspNetCore.App) ni de Kitpymes.Core.Validations.FluentValidation. Depende de Kitpymes.Core.Validations.Abstractions, Kitpymes.Core.Mediator.Abstractions 1.0.1 y Microsoft.Extensions.DependencyInjection.Abstractions 10.0.0.
+- Kitpymes.Core.Validations ya no depende de Kitpymes.Core.Shared, Kitpymes.Core.Logger, Kitpymes.Core.Logger.Abstractions, ASP.NET Core (Microsoft.AspNetCore.App) ni de Kitpymes.Core.Validations.FluentValidation. Depende de Kitpymes.Core.Validations.Abstractions, Kitpymes.Core.Results 1.2.1, Kitpymes.Core.Mediator.Abstractions 1.0.1 y Microsoft.Extensions.DependencyInjection.Abstractions 10.0.0.
 - Kitpymes.Core.Validations.Abstractions sólo depende de Kitpymes.Core.Results 1.2.1 (antes también de Shared y de ASP.NET Core).
 - Kitpymes.Core.Validations.FluentValidation depende de FluentValidation 11.11.0 en lugar de FluentValidation.AspNetCore 11.3.0, y ya no de Shared ni de ASP.NET Core.
 
 Guía de migración desde la 2.x, punto por punto:
 
-1. Lo que llegaba de rebote. Quien usaba Shared, Logger, ASP.NET Core, FluentValidation.AspNetCore o el paquete Kitpymes.Core.Validations.FluentValidation porque los traía Validations tiene que referenciarlos él mismo (PackageReference, o FrameworkReference Microsoft.AspNetCore.App / el SDK Microsoft.NET.Sdk.Web). Si no, deja de compilar.
+1. Lo que llegaba de rebote. Quien usaba Shared, Logger, ASP.NET Core, FluentValidation.AspNetCore o el paquete Kitpymes.Core.Validations.FluentValidation porque los traía Validations tiene que referenciarlos él mismo (PackageReference, o FrameworkReference Microsoft.AspNetCore.App / el SDK Microsoft.NET.Sdk.Web). Si no, deja de compilar. Quien llama a AddValidatorsFromAssembly de FluentValidation necesita FluentValidation.DependencyInjectionExtensions, que este paquete ya no trae.
 
 2. Registro. LoadValidations exige los ensamblados de los validadores; la sección ValidationsSettings de la configuración ya no se lee.
    Antes (2.x):
@@ -21,7 +21,7 @@ Guía de migración desde la 2.x, punto por punto:
      app.LoadValidations();                            // middleware
    Después:
      services.LoadValidations(o => o.WithAssemblies(typeof(CreateUserValidator).Assembly));
-   Rompe en silencio (compila y falla al arrancar): LoadValidations(_ => { }) o LoadValidations(null) no lanzaban nada en la 2.3.0 y ahora lanzan ArgumentException y ArgumentNullException. Quitar la sección ValidationsSettings de appsettings: ya no hace nada.
+   Rompe en silencio (compila y falla al arrancar): LoadValidations(_ => { }) o un Action nulo no lanzaban nada en la 2.3.0 y ahora lanzan ArgumentException y ArgumentNullException. Quitar la sección ValidationsSettings de appsettings: ya no hace nada.
 
 3. Validar. Las reglas sueltas con Throw() pasan a una clase por tipo que devuelve un Result.
    Antes (2.x):
@@ -45,23 +45,29 @@ Guía de migración desde la 2.x, punto por punto:
 4. Equivalencias de reglas. OJO: en la 2.x las reglas de comparación y de igualdad marcaban error cuando se CUMPLÍAN (IsGreater(10) fallaba si el valor era mayor que 10); en la 3.0 el nombre dice siempre lo que es válido. Traducir por el nombre invierte la regla sin que nada avise.
    Antes (2.x), "como mucho 10":   AddRule(edad, x => x.IsGreater(10))
    Después:                        RuleFor(x => x.Edad).LessThanOrEqual(10)      // NO GreaterThan(10)
-   Tabla (n, min y max como en la 2.x):
-   - IsNullOrEmpty, IsNullOrAny  -> Required()
-   - IsEmail, IsName, IsSubdomain, IsRegex(p) -> Email(), Name(), Subdomain(), Matches(p). En la 2.x fallaban con un valor nulo; ahora un nulo no se comprueba: añadir Required() si el campo es obligatorio.
+   La inversión vale también para las extensiones de FluentValidation de la 2.x (IsGreater(n) -> LessThanOrEqualTo(n), etc.).
+   Nulos y vacíos: en la 2.x, IsGreaterOrEqual, IsLess, IsLessOrEqual y los cuatro rangos lanzaban una excepción con un valor nulo, un texto vacío o en blanco o Guid.Empty, así que ese valor no pasaba. En la 3.0 las reglas equivalentes, igual que Email, Name, Subdomain y Matches, no comprueban el nulo y el texto vacío pasa: añadir Required() donde en la 2.x ese valor no pasaba.
+   Tabla (n, min y max como en la 2.x; en textos se compara la longitud y en colecciones el número de elementos):
+   - IsNullOrEmpty  -> textos: Required(); Guid: Required().NotEqual(Guid.Empty) (Required acepta Guid.Empty); colecciones: sólo rechazaba el nulo, Must(c => c is not null).
+   - IsNullOrAny    -> Required() (rechaza el nulo y la colección vacía).
+   - IsEmail, IsName, IsSubdomain, IsRegex(p) -> Email(), Name(), Subdomain(), Matches(p), más Required() (ver arriba: en la 2.x fallaban con un nulo o un texto vacío, y "   " no pasaba IsName).
    - IsEqual(v)      -> NotEqual(v)
    - IsNotEqual(v)   -> Equal(v)
-   - IsGreater(n)        -> números: LessThanOrEqual(n); textos: MaxLength(n); colecciones: Must(c => c.Count <= n)
-   - IsGreaterOrEqual(n) -> números: LessThan(n); textos: MaxLength(n - 1)
-   - IsLess(n)           -> números: GreaterThanOrEqual(n); textos: MinLength(n)
-   - IsLessOrEqual(n)    -> números: GreaterThan(n); textos: MinLength(n + 1)
-   - IsOutRange(min, max)        -> Between(min, max)
-   - IsOutOrEqualRange(min, max) -> GreaterThan(min).LessThan(max)
-   - IsInsideRange(min, max)        -> Must(v => v <= min || v >= max)
-   - IsInsideOrEqualRange(min, max) -> Must(v => v < min || v > max)
+     En la 2.x comparaban con object.Equals: IsEqual(5) sobre un long nunca fallaba. NotEqual(5L) sí falla: la traducción puede activar una regla que antes no hacía nada.
+   - IsGreater(n)        -> números: LessThanOrEqual(n); textos: MaxLength(n); colecciones: Must(c => c is null || c.Count <= n)
+   - IsGreaterOrEqual(n) -> números: LessThan(n); textos: MaxLength(n - 1); colecciones: Must(c => c is not null && c.Count < n)
+   - IsLess(n)           -> números: GreaterThanOrEqual(n); textos: MinLength(n); colecciones: Must(c => c is not null && c.Count >= n)
+   - IsLessOrEqual(n)    -> números: GreaterThan(n); textos: MinLength(n + 1); colecciones: Must(c => c is not null && c.Count > n)
+   - IsOutRange(min, max)        -> números: Between(min, max); textos: MinLength(min).MaxLength(max)
+   - IsOutOrEqualRange(min, max) -> números: GreaterThan(min).LessThan(max); textos: MinLength(min + 1).MaxLength(max - 1)
+   - IsInsideRange(min, max)        -> Must(v => v <= min || v >= max) (textos y colecciones: lo mismo sobre Length o Count, con v is not null && delante)
+   - IsInsideOrEqualRange(min, max) -> Must(v => v < min || v > max) (ídem)
+     Must se evalúa también con el nulo: de ahí el c is null / c is not null de las colecciones, que reproduce lo que hacía la 2.x. Between(min, max) con min > max lanza ArgumentException al construir el validador; IsOutRange lo aceptaba.
    - IsDirectory, IsFile, IsFileExtension -> sin equivalente (no son reglas de forma): Must o Custom propios.
    - Las variantes ...WithMessage(m) -> la regla seguida de WithMessage(m).
-   - ValidatorRule.Add(condición, mensaje) -> Must(...) o Custom((valor, contexto) => contexto.AddError(mensaje)).
-   - StopFirstError() -> ya es lo normal, pero por campo (en la 2.x era para toda la cadena); ContinueOnError() para ver todos los errores de un campo.
+   - ValidatorRule.Add(condición, mensaje) y Validator.AddRule(condición, mensaje) marcaban error cuando la condición era CIERTA -> Must(v => !condición).WithMessage(mensaje), o Custom((v, c) => { if (condición) c.AddError(mensaje); }).
+   - StopFirstError() -> cambia lo normal: en la 2.x, sin StopFirstError, salían todos los errores, también varios del mismo campo; en la 3.0 sale sólo el primero de cada campo. ContinueOnError() en la regla para ver todos los de un campo.
+   - En FluentValidation: StopFirstError() -> Cascade(CascadeMode.Stop); WithOverridePropertyName(n) -> OverridePropertyName(n); IsEmail() -> EmailAddress(), que es mucho más laxo que la expresión de la 2.x (Matches con una propia si hace falta).
 
 5. Errores. ValidationsException desaparece: no hay que capturar nada. Lo que daba exception.Count y exception.Contains(mensaje) está en result.Error.Fields (Field, Code, Message). Los mensajes por defecto cambian de texto y llevan la ruta del campo (address.street, items.0.name). Para la API, result.ToApiResult() de Kitpymes.Core.Results da el 400 con los errores por campo.
 
@@ -75,7 +81,7 @@ Guía de migración desde la 2.x, punto por punto:
      services.LoadFluentValidationAdapters(typeof(CustomerValidator).Assembly);
      services.LoadValidations(o => o.WithAssemblies(typeof(CustomerValidator).Assembly));
      RuleFor(x => x.Email).EmailAddress();             // las reglas propias de FluentValidation
-   Rompe en silencio: LoadFluentValidation activaba la validación automática de MVC y una fábrica de respuestas que lanzaba ValidationsException. Sin ella, los errores de enlace de datos de MVC (un JSON mal formado, un tipo que no se puede convertir) vuelven a la respuesta 400 por defecto de ASP.NET Core (ProblemDetails), y los validadores de FluentValidation ya no se ejecutan en MVC sino en el mediador.
+   Rompe en silencio: LoadFluentValidation llamaba siempre a services.AddMvc() y a AddFluentValidationClientsideAdapters. Una aplicación que contaba con eso para tener MVC, vistas o Razor Pages tiene que llamar ella a AddMvc() o AddControllersWithViews(). Además, LoadFluentValidation activaba la validación automática de MVC y una fábrica de respuestas que lanzaba ValidationsException. Sin ella, los errores de enlace de datos de MVC (un JSON mal formado, un tipo que no se puede convertir) vuelven a la respuesta 400 por defecto de ASP.NET Core (ProblemDetails), y los validadores de FluentValidation ya no se ejecutan en MVC sino en el mediador.
 
 8. Avisos. Los pragma o NoWarn de KPY0005 a KPY0008 ya no hacen falta: se pueden quitar.
 
