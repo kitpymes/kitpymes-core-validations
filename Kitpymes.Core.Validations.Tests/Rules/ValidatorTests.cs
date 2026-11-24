@@ -211,7 +211,7 @@ public class ValidatorTests
         foreach (var (message, code) in new (string, string?)[] { ("m", "sinpunto"), ("m", "Validations.Propio"), ("m", "Mod.con espacio"), (" ", null) })
         {
             var validator = For(v => v.For(x => x.Name).Custom((_, context) => context.AddError(message, code)));
-            await Assert.ThrowsExactlyAsync<ArgumentException>(async () => await validator.ValidateAsync(new Order()));
+            await Assert.ThrowsExactlyAsync<ArgumentException>(async () => _ = await validator.ValidateAsync(new Order()));
         }
     }
 
@@ -377,7 +377,7 @@ public class ValidatorTests
     public async Task Root_Rule_Needs_WithName()
     {
         var bad = For(v => v.For(x => x).Must(x => x.From <= x.To));
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () => await bad.ValidateAsync(new Order()));
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(async () => _ = await bad.ValidateAsync(new Order()));
 
         var good = For(v => v.For(x => x).Must(x => x.From <= x.To).WithName("to"));
         await Single(good, new Order { From = DateTime.MaxValue }, "to", ValidationErrorCodes.Condition);
@@ -436,7 +436,7 @@ public class ValidatorTests
         using var source = new CancellationTokenSource();
         await source.CancelAsync();
 
-        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => await For(v => v.For(x => x.Name).Required()).ValidateAsync(new Order(), source.Token));
+        await Assert.ThrowsExactlyAsync<OperationCanceledException>(async () => _ = await For(v => v.For(x => x.Name).Required()).ValidateAsync(new Order(), source.Token));
     }
 
     [TestMethod]
