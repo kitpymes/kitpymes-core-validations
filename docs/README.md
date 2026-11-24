@@ -39,6 +39,54 @@ dotnet add package Kitpymes.Core.Validations
 
 ## ⌨️ Código
 
+### Validator&lt;T&gt; (desde la 2.3.0)
+
+Valida la forma de un comando, una consulta o cualquier objeto y devuelve un `Result` de Kitpymes.Core.Results: correcto, o un error de validación (`Validations.Invalido`) con un `FieldError` por cada campo que falla. Las reglas de negocio (duplicados, saldos) no van aquí, sino en el dominio o en el manejador.
+
+```cs
+public sealed class CreateOrderValidator : Validator<CreateOrder>
+{
+    public CreateOrderValidator()
+    {
+        RuleFor(x => x.Customer).Required().MaxLength(100);
+        RuleFor(x => x.Email).Required().Email();
+        RuleFor(x => x.Address).SetValidator(new AddressValidator());
+        RuleForEach(x => x.Lines).SetValidator(new LineValidator());
+        RuleFor(x => x.To).Must((order, to) => to > order.From).WithErrorCode("Pedidos.FechasCruzadas");
+        RuleFor(x => x.Vat).Required().When(x => x.IsCompany);
+    }
+}
+
+Result result = await new CreateOrderValidator().ValidateAsync(command, cancellationToken);
+// result.Error.Fields: { Field = "lines.0.quantity", Code = "Validations.Mayor", Message = "El campo 'lines.0.quantity' debe ser mayor que 0." }
+```
+
+- El campo va con la ruta de un formulario de Angular: camelCase (respeta `[JsonPropertyName]`), con puntos y con el índice en las colecciones.
+- Por defecto se para en el primer error de cada campo (`ContinueOnError()` para seguir). Salvo `Required`, `Must`, `Custom`, `Equal` y `NotEqual`, las reglas no se evalúan con un valor nulo.
+- Los códigos están en `ValidationErrorCodes`. Los propios (`WithErrorCode`, `Custom`) tienen la forma `Modulo.Motivo` y no pueden usar el prefijo `Validations.`.
+- Mensajes en español, o en inglés si la cultura es `en`.
+
+### Paso del mediador
+
+```cs
+services.LoadValidations(o => o.WithAssemblies(typeof(CreateOrderValidator).Assembly));
+```
+
+Registra los validadores (singleton), un paso general que valida cada comando y consulta antes del manejador y devuelve el error sin llamarlo, y la comprobación de arranque de Kitpymes.Core.Mediator: la aplicación no arranca si un comando o consulta con datos de entrada no tiene validador, si tiene más de uno o si un validador está mal configurado.
+
+### Adaptador de FluentValidation
+
+```cs
+services.LoadFluentValidationAdapters(typeof(CustomerValidator).Assembly);
+services.LoadValidations(o => o.WithAssemblies(typeof(CustomerValidator).Assembly));
+```
+
+Expone cada `AbstractValidator<T>` como `IValidator<T>`, con las mismas rutas (`Items[0].Name` pasa a `items.0.name`) y los mismos códigos (`NotEmpty` da `Validations.Requerido`).
+
+### API antigua (obsoleta desde la 2.3.0; se elimina en la 3.0.0)
+
+Lo que sigue funciona igual, pero da los avisos KPY0005 a KPY0008, cada uno con lo que hay que usar en su lugar.
+
 ```cs
 public class ValidationsException : Exception
 {
@@ -52,7 +100,7 @@ public class ValidationsException : Exception
 }
 ```
 
-### Validator
+#### Validator
 
 ```cs
 public static class Validator
@@ -185,7 +233,7 @@ public class Person
 }
 ```
 
-### FluentValidation
+#### FluentValidation
 
 **Agregamos el middlware en la clase Startup**
 

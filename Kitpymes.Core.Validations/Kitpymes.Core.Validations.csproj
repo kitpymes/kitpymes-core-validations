@@ -10,9 +10,11 @@
   <ItemGroup>
     <PackageReference Include="Kitpymes.Core.Shared" Version="2.0.1" />
 
-    <PackageReference Include="Kitpymes.Core.Results" Version="1.0.1" />
+    <PackageReference Include="Kitpymes.Core.Results" Version="1.2.1" />
     
     <PackageReference Include="Kitpymes.Core.Logger" Version="2.1.0" />
+
+    <PackageReference Include="Kitpymes.Core.Mediator.Abstractions" Version="1.0.1" />
 
     <PackageReference Include="Kitpymes.Core.Logger.Abstractions" Version="2.1.0" />
   </ItemGroup>

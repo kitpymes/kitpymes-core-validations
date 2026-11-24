@@ -1,3 +1,31 @@
+# v.2.3.0
+Versión menor: añade la API nueva de validación y marca como obsoleta la antigua, que sigue funcionando igual. La 3.0.0 sólo quitará lo obsoleto.
+
+API nueva (Kitpymes.Core.Validations y Kitpymes.Core.Validations.Abstractions):
+- IValidator<T>.ValidateAsync devuelve un Result de Kitpymes.Core.Results: correcto, o un Error de validación (código Validations.Invalido) con un FieldError por cada campo que falla. No lanza excepciones por datos inválidos.
+- Validator<T>: base para escribir validadores con RuleFor y RuleForEach. Reglas: Required, MaxLength, MinLength, Email, Name, Subdomain, Matches, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Between, Equal, NotEqual, IsInEnum, Must (también con el objeto entero, para reglas entre campos) y Custom (varios errores en un campo). Modificadores: When, WithName, WithMessage, WithErrorCode, ContinueOnError. SetValidator para objetos anidados e Include para reglas comunes.
+- El campo de cada error lleva la ruta de un formulario de Angular: camelCase como System.Text.Json (respeta [JsonPropertyName]), con puntos y con el índice en las colecciones (address.street, lines.0.name).
+- Por defecto se para en el primer error de cada campo. Un ciclo entre objetos no se valida dos veces y a más de 32 niveles se da Validations.Profundidad.
+- Los códigos están en ValidationErrorCodes (Validations.Requerido, Validations.LongitudMaxima...). Los propios, con WithErrorCode o en Custom, tienen la forma Modulo.Motivo y no pueden usar el prefijo Validations.
+- Mensajes en español por defecto e inglés con la cultura en, elegidos al validar.
+- Un validador no guarda estado entre validaciones: se registra como singleton y se puede usar desde varios hilos a la vez.
+
+Paso del mediador (Kitpymes.Core.Mediator):
+- services.LoadValidations(o => o.WithAssemblies(...)) registra los validadores de los ensamblados, un paso general (IPipelineBehavior) que valida cada comando y consulta antes del manejador y devuelve el fallo sin llamarlo, y la comprobación de arranque (IValidationStartupCheck).
+- La comprobación de arranque falla si un comando o consulta con algún dato de entrada (propiedad pública legible o campo público) no tiene validador, si tiene más de uno, si el paso no está registrado o si un validador está mal configurado (una regla sobre el objeto entero sin WithName).
+
+FluentValidation (Kitpymes.Core.Validations.FluentValidation), como adaptador de ejemplo:
+- FluentValidationAdapter<T> expone un validador de FluentValidation como IValidator<T>, con las mismas rutas (Items[0].Name pasa a items.0.name) y los mismos códigos (NotEmpty da Validations.Requerido; un código propio válido se respeta).
+- services.LoadFluentValidationAdapters(...) registra los validadores de FluentValidation y sus adaptadores. Hay que llamar también a LoadValidations(o => o.WithAssemblies(...)) para el paso y la comprobación de arranque.
+
+Obsoleto (se elimina en la 3.0.0; cada aviso dice qué usar):
+- KPY0005: Validator (estático), ValidatorRule y ValidatorRuleOptions.
+- KPY0006: ValidationsException.
+- KPY0007: ValidationsMiddleware, LoadValidations(IApplicationBuilder), ValidationsSettings, LoadValidations() y LoadValidations(ValidationsSettings), ValidationsOptions.WithEnabled y ValidationsOptions.ValidationsSettings.
+- KPY0008: las extensiones de reglas de FluentValidation (IsEmail, IsName...), LoadFluentValidation, FluentValidationSettings y ValidationResultExtensions.
+
+Dependencias: Kitpymes.Core.Results 1.0.1 a 1.2.1 (también en Abstractions) y Kitpymes.Core.Mediator.Abstractions 1.0.1 nueva. La validación de paquete compara con la 2.2.0.
+
 # v.2.2.0
 Versión menor y no parche: corrige un fallo grave, pero cambia el comportamiento de quien encadenaba reglas de una forma que ya no se admite (abajo).
 
