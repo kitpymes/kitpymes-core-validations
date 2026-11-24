@@ -31,8 +31,8 @@ public static class FluentValidationAdapterServiceCollectionExtensions
     /// <c>services.LoadValidations(o => o.WithAssemblies(...))</c>, que hay que llamar también. Un tipo sólo puede tener
     /// un validador: si tiene uno de FluentValidation y un <c>Validator&lt;T&gt;</c>, la comprobación de arranque
     /// falla. Llamarlo dos veces no registra nada dos veces.</para>
-    /// <para>No lo combine con <c>LoadFluentValidation</c>, la integración antigua con MVC: FluentValidation validaría
-    /// dos veces, una en MVC y otra en el mediador.</para>
+    /// <para>No lo combine con la validación automática de MVC de FluentValidation: validaría dos veces, una en MVC
+    /// y otra en el mediador.</para>
     /// </remarks>
     /// <param name="services">Colección de servicios.</param>
     /// <param name="assemblies">Ensamblados donde están los validadores de FluentValidation.</param>

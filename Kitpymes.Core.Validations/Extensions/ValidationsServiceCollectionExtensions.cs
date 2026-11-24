@@ -9,16 +9,12 @@ namespace Kitpymes.Core.Validations.Extensions;
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using Kitpymes.Core.Mediator.Abstractions;
-using Kitpymes.Core.Shared.Extensions;
 using Kitpymes.Core.Validations.Abstractions;
-using Kitpymes.Core.Validations.FluentValidation.Extensions;
 using Kitpymes.Core.Validations.Pipeline;
 using Kitpymes.Core.Validations.Settings;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -39,24 +35,8 @@ public static class ValidationsServiceCollectionExtensions
     /// <summary>
     /// Carga el servicio de validaciones.
     /// </summary>
-    /// <param name="services">Colección de servicios.</param>
-    /// <returns>IServiceCollection.</returns>
-    [Obsolete("Lee la configuración de la API antigua. Use LoadValidations(o => o.WithAssemblies(...)) con validadores Validator<T>. Se elimina en 3.0.0.", DiagnosticId = "KPY0007")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public static IServiceCollection LoadValidations(this IServiceCollection services)
-    {
-        var configuration = services.ToService<IConfiguration>();
-
-        var settings = configuration?.GetSection(nameof(ValidationsSettings))?.Get<ValidationsSettings>();
-
-        return services.LoadValidations(settings);
-    }
-
-    /// <summary>
-    /// Carga el servicio de validaciones.
-    /// </summary>
     /// <remarks>
-    /// <para>Con <see cref="ValidationsOptions.WithAssemblies"/> registra cada validador de los ensamblados como
+    /// <para>Con <see cref="ValidationsOptions.WithAssemblies"/>, que es obligatorio, registra cada validador de los ensamblados como
     /// <see cref="IValidator{T}"/> (singleton: un validador no guarda nada entre validaciones), el paso de validación
     /// del mediador para todos los comandos y consultas y su comprobación de arranque
     /// (<see cref="IValidationStartupCheck"/>). Llamarlo dos veces no registra nada dos veces.</para>
@@ -64,41 +44,21 @@ public static class ValidationsServiceCollectionExtensions
     /// <param name="services">Colección de servicios.</param>
     /// <param name="options">Configuración de las validaciones.</param>
     /// <returns>IServiceCollection.</returns>
+    /// <exception cref="ArgumentException">Si no se indica ningún ensamblado con <see cref="ValidationsOptions.WithAssemblies"/>.</exception>
     public static IServiceCollection LoadValidations(this IServiceCollection services, Action<ValidationsOptions> options)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(options);
 
-        // Como en la 2.2.0, unas opciones nulas no configuran nada.
         var configured = new ValidationsOptions();
-        options?.Invoke(configured);
+        options(configured);
 
-        if (configured.Assemblies.Count > 0)
+        if (configured.Assemblies.Count == 0)
         {
-            AddValidators(services, configured.Assemblies);
+            throw new ArgumentException("Indique los ensamblados de los validadores con o => o.WithAssemblies(...).", nameof(options));
         }
 
-#pragma warning disable KPY0007 // La API antigua sigue funcionando hasta la 3.0.0.
-        return services.LoadValidations(configured.ValidationsSettings);
-#pragma warning restore KPY0007
-    }
-
-    /// <summary>
-    /// Carga el servicio de validaciones.
-    /// </summary>
-    /// <param name="services">Colección de servicios.</param>
-    /// <param name="settings">Configuración de las validaciones.</param>
-    /// <returns>IServiceCollection.</returns>
-    [Obsolete("Configura la API antigua. Use LoadValidations(o => o.WithAssemblies(...)) con validadores Validator<T>. Se elimina en 3.0.0.", DiagnosticId = "KPY0007")]
-    [EditorBrowsable(EditorBrowsableState.Never)]
-    public static IServiceCollection LoadValidations(this IServiceCollection services, ValidationsSettings? settings)
-    {
-        if (settings?.Enabled == true)
-        {
-            if (settings.FluentValidationSettings?.Enabled == true)
-            {
-                services.LoadFluentValidation(settings.FluentValidationSettings);
-            }
-        }
+        AddValidators(services, configured.Assemblies);
 
         return services;
     }

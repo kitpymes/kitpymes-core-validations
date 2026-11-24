@@ -110,7 +110,14 @@ jobs:
         run: |
           n=0
           for p in $(git ls-files 'Kitpymes.*.csproj' | grep -v Tests); do
-            dotnet pack "$p" -c Release -o artifacts-prueba
+            if ! dotnet pack "$p" -c Release -o artifacts-prueba; then
+              # En una versión mayor, las roturas aceptadas van en <Proyecto>/CompatibilitySuppressions.xml. Si
+              # falta, se genera aquí y se muestra para copiarlo al repo (sólo las que están en las notas).
+              dotnet pack "$p" -c Release -o artifacts-supresiones -p:ApiCompatGenerateSuppressionFile=true > /dev/null || true
+              f="$(dirname "$p")/CompatibilitySuppressions.xml"
+              if [ -f "$f" ]; then echo "----- $f -----"; cat "$f"; echo "-----"; fi
+              echo "::error::No se pudo empaquetar $p."; exit 1
+            fi
             n=$((n + 1))
           done
           if [ "$n" -eq 0 ]; then
