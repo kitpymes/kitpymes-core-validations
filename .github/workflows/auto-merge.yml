@@ -1,6 +1,6 @@
 name: auto-merge
 
-# Fusiona solo el PR de una rama cuando su ci termina en verde (todos los jobs, también la mutación),
+# Fusiona solo el PR de una rama cuando su ci termina en verde (todos los jobs, y los de JOBS_EN_VERDE sin omitir),
 # con "Rebase and merge". Así la fusión no depende de que alguien esté delante.
 #
 # No fusiona:
@@ -51,6 +51,8 @@ jobs:
       RUN_CI: ${{ github.event.workflow_run.id }}
       RESULTADO_CI: ${{ github.event.workflow_run.conclusion }}
       ESTA_EJECUCION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # Jobs de ci que tienen que estar en verde de verdad (no omitidos). Cambia según el repo.
+      JOBS_EN_VERDE: build-test mutation
     steps:
       - uses: actions/checkout@v7
         with:
@@ -76,11 +78,13 @@ jobs:
           [ "$(jq -r '.head.sha' <<< "$pr")" = "$SHA_CI" ] || no "el PR #$numero tiene commits más nuevos que el que pasó la ci."
           jq -e '.labels | map(.name) | index("espera-sebastian")' <<< "$pr" > /dev/null && no "el PR #$numero tiene la etiqueta espera-sebastian."
 
-          # Todos los jobs de la ci en verde u omitidos, y build-test y mutation en verde de verdad.
+          # Todos los jobs de la ci en verde u omitidos, y los de JOBS_EN_VERDE en verde de verdad.
           jobs=$(gh api "repos/$REPO/actions/runs/$RUN_CI/jobs?per_page=100")
           malos=$(jq -r '[.jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name] | join(", ")' <<< "$jobs")
           [ -z "$malos" ] || no "jobs de la ci sin verde: $malos."
-          for j in build-test mutation; do
+          read -r -a obligatorios <<< "$JOBS_EN_VERDE"
+          [ "${#obligatorios[@]}" -gt 0 ] || { echo "::error::JOBS_EN_VERDE está vacío."; exit 1; }
+          for j in "${obligatorios[@]}"; do
             [ "$(jq -r --arg j "$j" '[.jobs[] | select(.name == $j and .conclusion == "success")] | length' <<< "$jobs")" = "1" ] \
               || no "el job $j no está en verde."
           done
