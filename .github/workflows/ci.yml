@@ -24,6 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # La puerta de fusión (auto-merge.yml) no ve código de la rama y el código de la rama no ve el token;
+      # y su decisión se prueba contra PRs falsos. Cada comprobación se prueba también contra casos malos.
+      - name: Puerta de fusión separada del código de la rama
+        run: bash .github/scripts/check-puerta-fusion.sh .github/workflows
+
+      - name: Probar la comprobación de la puerta contra casos malos
+        run: bash .github/scripts/test-check-puerta-fusion.sh .github/workflows
+
+      - name: Probar la decisión de la puerta contra PRs falsos
+        run: bash .github/scripts/test-decision-puerta.sh .github/workflows
+
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'

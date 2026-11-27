@@ -10,16 +10,30 @@ name: auto-merge
 # - un PR cuya cabeza ya no es el commit que pasó la ci (llegó otro commit: decide su propia ci);
 # - un PR con la etiqueta espera-sebastian;
 # - un PR en borrador;
+# - un PR que toca .github/** o nuget.config (Sebastián, 27/11): podría reescribir esta puerta, la ci o el
+#   origen de los paquetes y fusionarse solo. Esos los fusiona Sebastián a mano, y se deja un comentario;
+# - un PR del que la API no da la lista completa de ficheros;
+# - un PR que cambia ficheros de MSBuild (o lo que MSBuild lee solo) en algo más que la versión: lista blanca,
+#   abajo. Esos corren en master, donde la ci publica;
 # - un PR que cambia la versión mayor en Pack.Build.props respecto a su punto de partida en master: esas las
-#   fusiona Sebastián, y deja un comentario. Tampoco uno que toque <Version> o <VersionPrefix> en otro fichero.
+#   fusiona Sebastián, y deja un comentario.
+#   La versión se lee del diff que da la API (pulls/N/files, contra el punto de partida de la rama), no del
+#   código de la rama: este workflow no descarga código.
 #
 # Si la ci termina antes de que auto-pr.yml abra el PR, no hay PR y no se fusiona: hay que relanzar la ci.
 #
 # Fusiona con el secreto AUTOMERGE_TOKEN (token de Sebastián), no con github.token: un push hecho con
 # github.token no lanza otros workflows, y el push a master tiene que lanzar ci para publicar.
+# El secreto vive en el entorno automerge, restringido a master (Sebastián, 27/11): sólo lo ve el job
+# fusionar, que corre con la versión de master de este fichero. Una rama que nombre el entorno no lo recibe.
 # Si el token falta, caduca o no tiene permisos, o GitHub rechaza la fusión (conflicto al hacer rebase,
 # una regla de la rama), el job falla en rojo y deja en el PR un comentario con la respuesta de GitHub.
 # Si la cabeza del PR cambió entre la decisión y la fusión (409), no es un fallo: decide la ci del commit nuevo.
+#
+# Separación (Sebastián, 27/11): este es el único workflow que nombra un secreto, y no descarga ni ejecuta
+# código de la rama (ni checkout, ni git, ni artefactos): sólo llama a la API de GitHub. El código de la rama
+# corre en ci.yml, que no tiene ningún secreto. Lo comprueba check-puerta-fusion.sh, y test-decision-puerta.sh
+# ejecuta el paso "Decidir si se fusiona" contra PRs falsos.
 #
 # workflow_run usa siempre la versión de este fichero que hay en master, no la de la rama.
 on:
@@ -37,27 +51,28 @@ concurrency:
   group: auto-merge-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false
 
+env:
+  REPO: ${{ github.repository }}
+  SHA_CI: ${{ github.event.workflow_run.head_sha }}
+  ESTA_EJECUCION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
 jobs:
-  fusionar:
+  decidir:
     if: >-
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch != 'master' &&
       github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
+    outputs:
+      fusionar: ${{ steps.decidir.outputs.fusionar }}
+      numero: ${{ steps.decidir.outputs.numero }}
     env:
-      REPO: ${{ github.repository }}
       RAMA: ${{ github.event.workflow_run.head_branch }}
-      SHA_CI: ${{ github.event.workflow_run.head_sha }}
       RUN_CI: ${{ github.event.workflow_run.id }}
       RESULTADO_CI: ${{ github.event.workflow_run.conclusion }}
-      ESTA_EJECUCION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       # Jobs de ci que tienen que estar en verde de verdad (no omitidos). Cambia según el repo.
       JOBS_EN_VERDE: build-test mutation
     steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
       - name: Decidir si se fusiona
         id: decidir
         env:
@@ -65,6 +80,14 @@ jobs:
         run: |
           set -euo pipefail
           no() { echo "No se fusiona: $1"; echo "fusionar=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          # Deja un comentario en el PR una sola vez (lo reconoce por su primera línea).
+          comentar() {
+            local marca="$1" texto="$2"
+            if [ "$(gh api "repos/$REPO/issues/$numero/comments?per_page=100" --paginate --jq "[.[] | select(.body | startswith(\"$marca\"))] | length" | jq -s 'add // 0')" = "0" ]; then
+              gh pr comment "$numero" --repo "$REPO" --body "$marca
+          $texto"
+            fi
+          }
 
           pr=$(gh api -X GET "repos/$REPO/pulls" -f state=open -f base=master -f head="${REPO%%/*}:$RAMA" --jq '.[0] // empty')
           [ -n "$pr" ] || no "la rama $RAMA no tiene un PR abierto contra master."
@@ -80,7 +103,8 @@ jobs:
 
           # Todos los jobs de la ci en verde u omitidos, y los de JOBS_EN_VERDE en verde de verdad.
           jobs=$(gh api "repos/$REPO/actions/runs/$RUN_CI/jobs?per_page=100")
-          malos=$(jq -r '[.jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name] | join(", ")' <<< "$jobs")
+          # Los nombres vienen del ci.yml de la rama: sin saltos de línea ni "::" (no pueden colar comandos de workflow).
+          malos=$(jq -r '[.jobs[] | select(.conclusion != "success" and .conclusion != "skipped") | .name | gsub("[\\r\\n]|::"; " ")] | join(", ")' <<< "$jobs")
           [ -z "$malos" ] || no "jobs de la ci sin verde: $malos."
           read -r -a obligatorios <<< "$JOBS_EN_VERDE"
           [ "${#obligatorios[@]}" -gt 0 ] || { echo "::error::JOBS_EN_VERDE está vacío."; exit 1; }
@@ -89,42 +113,102 @@ jobs:
               || no "el job $j no está en verde."
           done
 
-          # Versión: se compara con el punto de partida de la rama en master, no con master de ahora
-          # (una rama anterior a una subida de mayor en master no la "baja"). La mayor la fusiona Sebastián.
-          git fetch -q origin "$SHA_CI"
-          base=$(git merge-base origin/master "$SHA_CI")
-          props=docs/props/Pack.Build.props
-          otros=$(git diff --name-only "$base" "$SHA_CI" -- '*.props' '*.targets' '*.csproj' \
-            | grep -vxF "$props" \
-            | while read -r f; do
-                git diff "$base" "$SHA_CI" -- "$f" | grep -qE '^[+-].*<(Version|VersionPrefix)>' && echo "$f"
-              done || true)
-          [ -z "$otros" ] || no "el PR #$numero cambia <Version> fuera de $props: $(tr '\n' ' ' <<< "$otros")."
-          version() { grep -oP '(?<=<Version>)[^<]+' <<< "$1" | head -n 1; }
-          antes=$(version "$(git show "$base:$props")")
-          despues=$(version "$(git show "$SHA_CI:$props")")
-          if [ "${despues%%.*}" != "${antes%%.*}" ]; then
-            marca="<!-- auto-merge:version-mayor -->"
-            if ! gh api --paginate "repos/$REPO/issues/$numero/comments" --jq '.[].body' | grep -qF "$marca"; then
-              gh pr comment "$numero" --repo "$REPO" --body "$marca
-          Este PR cambia la versión mayor ($antes → $despues): no se fusiona solo. Lo fusiona Sebastián."
-            fi
-            no "el PR #$numero cambia la versión mayor ($antes → $despues)."
+          # Ficheros del PR. pulls/N/files da como mucho 3000: si no llegan todos, no se fusiona.
+          ficheros="$RUNNER_TEMP/ficheros-pr.json"
+          gh api --paginate "repos/$REPO/pulls/$numero/files?per_page=100" --jq '.[]' > "$ficheros"
+          # changed_files sólo viene en la consulta de un PR, no en la lista de PRs (en la lista sale null).
+          total=$(gh api "repos/$REPO/pulls/$numero" --jq '.changed_files')
+          [[ "$total" =~ ^[0-9]+$ ]] || { echo "::error::La API no da changed_files del PR #$numero ('$total')."; exit 1; }
+          [ "$(jq -s 'length' "$ficheros")" = "$total" ] \
+            || no "no se pudo leer la lista completa de ficheros del PR #$numero (tiene $total)."
+
+          # La ci está en verde: si toca la puerta, la ci o el origen de los paquetes, se avisa y lo fusiona Sebastián.
+          sensibles=$(jq -r '
+            select([.filename, (.previous_filename // empty)] | any(test("^\\.github/|(^|/)nuget\\.config$"; "i")))
+            | .filename' "$ficheros" | tr '\n' ' ')
+          if [ -n "$sensibles" ]; then
+            comentar "<!-- auto-merge:puerta -->" "Este PR toca la puerta de fusión, la ci o el origen de los paquetes ($sensibles) y no se fusiona solo: lo fusiona Sebastián a mano, con la ci en verde."
+            no "el PR #$numero toca .github/** o nuget.config ($sensibles): lo fusiona Sebastián."
           fi
 
-          echo "Se fusiona el PR #$numero ($SHA_CI, versión $antes → $despues)."
+          # Ficheros de MSBuild y lo que MSBuild lee solo (lista blanca, sin distinguir mayúsculas): sólo se fusionan
+          # solos si lo único que cambia es <Version>/<PackageValidationBaselineVersion> en Pack.Build.props o la
+          # versión de un PackageReference que ya estaba. Cualquier otra cosa (una condición, PackageVersion, un
+          # import, un Exec, un origen de paquetes, un fichero nuevo o renombrado) la fusiona Sebastián: corre en
+          # master con permiso para publicar.
+          props=docs/props/Pack.Build.props
+          msbuild='\.(props|targets|csproj|vbproj|fsproj|proj|rsp|user)$|(^|/)(directory\.build\.[^/]*|directory\.packages\.props|global\.json)$'
+          fueradelista=$(jq -r --arg p "$props" --arg m "$msbuild" '
+            def cambiadas: .patch | split("\n") | map(select(test("^[+-]")));
+            def lado($c): map(select(startswith($c)) | sub("^[+-][ \t]*"; "") | sub("[ \t\r]*$"; "") | sub(" Version=\"[^\"]*\""; "")) | sort;
+            def cuenta($c; $prop): map(select(startswith($c) and test("<" + $prop + ">"))) | length;
+            # Valores sin $, @ ni % (MSBuild los evaluaría: propiedades, listas, variables de entorno).
+            def referencia: test("^[+-][ \t]*<PackageReference Include=\"[^\"$@%]+\" Version=\"[0-9\\[(][^\"$@%]*\"( (PrivateAssets|IncludeAssets|ExcludeAssets)=\"[^\"$@%]*\")*[ \t]*/>[ \t\r]*$");
+            def version: test("^[+-][ \t]*<(Version|PackageValidationBaselineVersion)>[0-9][0-9A-Za-z.+-]*</(Version|PackageValidationBaselineVersion)>[ \t\r]*$");
+            select([.filename, (.previous_filename // empty)] | any(test($m; "i")))
+            | select(
+                .status != "modified" or .patch == null
+                or (cambiadas as $l
+                    | if .filename == $p then
+                        ($l | all(version) | not)
+                        or ($l | cuenta("-"; "PackageValidationBaselineVersion")) > 1
+                        or ($l | cuenta("-"; "PackageValidationBaselineVersion")) != ($l | cuenta("+"; "PackageValidationBaselineVersion"))
+                      else
+                        ($l | all(referencia) | not) or ($l | lado("-")) != ($l | lado("+"))
+                      end))
+            | .filename' "$ficheros" | tr '\n' ' ')
+          if [ -n "$fueradelista" ]; then
+            comentar "<!-- auto-merge:msbuild -->" "Este PR cambia ficheros de MSBuild más allá de la versión ($fueradelista) y no se fusiona solo: lo fusiona Sebastián a mano, con la ci en verde."
+            no "el PR #$numero cambia MSBuild más allá de la versión ($fueradelista): lo fusiona Sebastián."
+          fi
+
+          # Versión: del diff contra el punto de partida de la rama en master (el de pulls/N/files), no de master
+          # de ahora (una rama anterior a una subida de mayor en master no la "baja"). La mayor la fusiona Sebastián.
+          parche=$(jq -r --arg p "$props" 'select(.filename == $p) | .patch' "$ficheros")
+          version() { grep -oP "^\\$1\\s*<Version>\\K[^<]+" <<< "$parche" || true; }
+          antes=$(version -); despues=$(version +)
+          if [ -n "$antes$despues" ]; then
+            [ "$(wc -l <<< "$antes")" = 1 ] && [ "$(wc -l <<< "$despues")" = 1 ] && [ -n "$antes" ] && [ -n "$despues" ] \
+              || no "el diff de $props no tiene exactamente una <Version> quitada y una puesta."
+            if [ "${despues%%.*}" != "${antes%%.*}" ]; then
+              comentar "<!-- auto-merge:version-mayor -->" "Este PR cambia la versión mayor ($antes → $despues): no se fusiona solo. Lo fusiona Sebastián."
+              no "el PR #$numero cambia la versión mayor ($antes → $despues)."
+            fi
+            echo "Versión $antes → $despues."
+          else
+            echo "La versión no cambia."
+          fi
+
+          echo "Se fusiona el PR #$numero ($SHA_CI)."
           echo "fusionar=true" >> "$GITHUB_OUTPUT"
 
+      - name: Avisar en el PR si no se pudo decidir
+        if: failure() && steps.decidir.outputs.numero != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMERO: ${{ steps.decidir.outputs.numero }}
+        run: |
+          gh pr comment "$NUMERO" --repo "$REPO" --body "La fusión automática ha fallado: $ESTA_EJECUCION
+
+          Falló el paso que decide si se fusiona (una llamada a la API), antes de intentar la fusión: no es cosa del token. Mientras, este PR se fusiona a mano."
+
+  # El único job que ve el token. No ejecuta nada de la rama: lee el PR y lo fusiona por la API.
+  fusionar:
+    needs: decidir
+    if: needs.decidir.outputs.fusionar == 'true'
+    runs-on: ubuntu-latest
+    environment: automerge
+    env:
+      NUMERO: ${{ needs.decidir.outputs.numero }}
+    steps:
       - name: Fusionar
-        if: steps.decidir.outputs.fusionar == 'true'
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
-          NUMERO: ${{ steps.decidir.outputs.numero }}
         run: |
           set -euo pipefail
           respuesta="$RUNNER_TEMP/respuesta-fusion.txt"
           if [ -z "$GH_TOKEN" ]; then
-            echo "Falta el secreto AUTOMERGE_TOKEN en este repo." | tee "$respuesta"
+            echo "Falta el secreto AUTOMERGE_TOKEN en el entorno automerge de este repo." | tee "$respuesta"
             exit 1
           fi
 
@@ -150,21 +234,15 @@ jobs:
           exit 1
 
       - name: Avisar en el PR si no se pudo fusionar
-        if: failure() && steps.decidir.outputs.numero != ''
+        if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
-          NUMERO: ${{ steps.decidir.outputs.numero }}
         run: |
           respuesta="$RUNNER_TEMP/respuesta-fusion.txt"
-          if [ -s "$respuesta" ]; then
-            detalle=$(head -c 1500 "$respuesta")
-          else
-            detalle="Falló el paso que decide si se fusiona, antes de intentar la fusión: ver la ejecución."
-          fi
+          detalle=$(head -c 1500 "$respuesta" 2>/dev/null || echo "Sin respuesta: ver la ejecución.")
           case "$detalle" in
-            *"HTTP 401"*|*"Falta el secreto"*|*"Bad credentials"*) causa="El token falta, ha caducado o no vale: hay que crear uno nuevo y guardarlo en el secreto AUTOMERGE_TOKEN." ;;
+            *"HTTP 401"*|*"Falta el secreto"*|*"Bad credentials"*) causa="El token falta, ha caducado o no vale: hay que crear uno nuevo y guardarlo en el secreto AUTOMERGE_TOKEN del entorno automerge." ;;
             *"HTTP 403"*|*"HTTP 404"*) causa="El token no tiene permisos sobre este repo (o una regla de la rama lo impide)." ;;
-            *"Falló el paso"*) causa="La decisión falló (una llamada a la API o a git): no es cosa del token." ;;
             *) causa="GitHub ha rechazado la fusión (conflicto al hacer rebase, una regla de la rama u otro motivo): ver la respuesta." ;;
           esac
           gh pr comment "$NUMERO" --repo "$REPO" --body "La fusión automática ha fallado: $ESTA_EJECUCION
